@@ -56,6 +56,18 @@ public class AnswerService {
         return savedAnswer.getId();
     }
 
+    public void updateAnswer(int id, NewAnswerDTO answerDTO){
+        Optional<Answer> answer = answerRepository.findById(id);
+
+        if(answer.isEmpty()){
+            throw new RuntimeException("Content is empty");
+        }
+        Answer updatedAnswer= answer.get();
+        updatedAnswer.setContent(answerDTO.content());
+
+        answerRepository.save(updatedAnswer);
+    }
+
     public boolean deleteAnswer(int id){
         try {
             answerRepository.deleteById(id);

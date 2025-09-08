@@ -40,6 +40,12 @@ public class AnswerController {
         }
     }
 
+    @PatchMapping("/{id}")
+    public void updateAnswer(@PathVariable("id") int id, @RequestBody NewAnswerDTO answerDTO){
+        answerService.updateAnswer(id, answerDTO);
+    }
+
+
     @DeleteMapping("/{id}")
     public boolean deleteQuestionById(@PathVariable int id) {
         return answerService.deleteAnswer(id);

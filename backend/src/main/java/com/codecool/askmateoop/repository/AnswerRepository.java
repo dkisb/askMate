@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
     Optional<List<Answer>> getAllByQuestionId(int questionId);
+    Optional<Answer> findById(int id);
     void deleteById(int id);
 }

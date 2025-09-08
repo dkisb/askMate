@@ -31,6 +31,11 @@ public class QuestionController {
         return questionService.addNewQuestion(question);
     }
 
+    @PatchMapping("/{id}")
+    public void updateQuestion(@PathVariable("id") int id, @RequestBody NewQuestionDTO questionDTO){
+        questionService.updateQuestion(id, questionDTO);
+    }
+
     @DeleteMapping("/{id}")
     public boolean deleteQuestionById(@PathVariable int id) {
         return questionService.deleteQuestionById(id);

@@ -30,13 +30,12 @@ public class UserController {
         userService.createUser(newUser);
     }
 
-//    @GetMapping("/{user_id}/points")
-//    public int getPoints(@PathVariable int user_id) {
-//        return userService.getReliabilityLevel(user_id);
-//    }
-//
-//    @PatchMapping("/")
-//    public Map<String, String> addNewPoints(@RequestBody PointsDTO pointsDTO) {
-//        return userService.addNewPoints(pointsDTO);
-//    }
+    @GetMapping("/{user_id}/points")
+    public int getPoints(@PathVariable int user_id) {
+        return userService.getReliabilityLevel(user_id);
+   }
+    @PatchMapping("/")
+    public void addNewPoints(@RequestBody PointsDTO pointsDTO) {
+        userService.addNewPoints(pointsDTO);
+    }
 }

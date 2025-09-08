@@ -6,6 +6,7 @@ import com.codecool.askmateoop.security.jwt.AuthTokenFilter;
 import com.codecool.askmateoop.security.jwt.JwtUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -21,6 +22,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 
 @Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
 public class WebSecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final AuthEntryPointJwt unauthorizedHandler;
@@ -61,9 +64,18 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // admin endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // moderator endpoints
+                        .requestMatchers("/api/moderator/**").hasAnyRole("MODERATOR", "ADMIN" )
+
+                        // user endpoints
                         .requestMatchers("/api/user/register").permitAll()
                         .requestMatchers("/api/user/login").permitAll()
-                        .requestMatchers("/api/user/me").authenticated()
+                        .requestMatchers("/api/question/**").hasRole("USER")
+
+                        // anything else (POST/DELETE/PUT) requires authentication
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

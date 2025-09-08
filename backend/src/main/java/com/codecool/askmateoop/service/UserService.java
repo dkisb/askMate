@@ -20,6 +20,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -83,4 +86,17 @@ public class UserService {
     }
 
 
+    public int getReliabilityLevel (int userId) {
+        return userRepository.findReliabilityPointsById(userId);
+    }
+
+    public void addNewPoints (PointsDTO pointsDTO) {
+        Optional<UserEntity> user = userRepository.findById(pointsDTO.userId());
+        if(user.isEmpty()){
+            throw new RuntimeException("User not found");
+        }
+        UserEntity userEntity = user.get();
+        userEntity.setReliabilityPoints(userEntity.getReliabilityPoints() + pointsDTO.points());
+        userRepository.save(userEntity);
+    }
 }
