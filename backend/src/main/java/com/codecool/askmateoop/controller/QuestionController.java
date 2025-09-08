@@ -5,7 +5,6 @@ import com.codecool.askmateoop.controller.dto.question.QuestionDTO;
 import com.codecool.askmateoop.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
