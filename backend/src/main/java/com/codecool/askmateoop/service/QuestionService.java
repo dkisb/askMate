@@ -72,7 +72,7 @@ public class QuestionService {
         Optional<Question> question = questionRepository.findById(id);
 
         if(question.isEmpty()){
-            throw new RuntimeException("Content is empty");
+            throw new RuntimeException("Question not found");
         }
         Question updatedQuestion= question.get();
         updatedQuestion.setTitle(questionDTO.title());
