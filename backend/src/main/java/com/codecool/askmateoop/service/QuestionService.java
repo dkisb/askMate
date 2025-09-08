@@ -2,46 +2,76 @@ package com.codecool.askmateoop.service;
 
 import com.codecool.askmateoop.controller.dto.question.NewQuestionDTO;
 import com.codecool.askmateoop.controller.dto.question.QuestionDTO;
-import com.codecool.askmateoop.dao.model.question.QuestionDAO;
-import com.codecool.askmateoop.dao.model.question.Question;
+import com.codecool.askmateoop.model.entities.Question;
+import com.codecool.askmateoop.model.entities.UserEntity;
+import com.codecool.askmateoop.repository.QuestionRepository;
+import com.codecool.askmateoop.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+import java.util.Optional;
 
 @Service
 public class QuestionService {
 
-    private final QuestionDAO questionDAO;
+    private final QuestionRepository questionRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public QuestionService(QuestionDAO questionDAO) {
-        this.questionDAO = questionDAO;
+    public QuestionService(QuestionRepository questionRepository, UserRepository userRepository) {
+        this.questionRepository = questionRepository;
+        this.userRepository = userRepository;
     }
 
     public List<QuestionDTO> getAllQuestions() {
-        List<Question> allQuestions = questionDAO.getAllQuestions();
-        return allQuestions.stream().map(q -> new QuestionDTO(
-                q.getId(),
-                q.getTitle(),
-                q.getContent(),
-                q.getCreatedAt()
-        ))
-                .toList();
+        List<Question> questions = questionRepository.findAll();
+        if (questions.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return questions.stream().map(q -> new QuestionDTO(q.getId(), q.getTitle(), q.getContent(), q.getCreatedAt())).toList();
     }
 
     public QuestionDTO getQuestionById(int id) {
-        Question question = questionDAO.getQuestionById(id);
+        Optional<Question> questionOpt = questionRepository.findQuestionById(id);
+        if (questionOpt.isEmpty()) {
+            throw new RuntimeException("Question not found");
+        }
+        Question question = questionOpt.get();
         return new QuestionDTO(question.getId(), question.getTitle(), question.getContent(), question.getCreatedAt());
     }
 
     public boolean deleteQuestionById(int id) {
-        return questionDAO.deleteQuestion(id);
+        try {
+            questionRepository.deleteQuestionById(id);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Question not found");
+        }
     }
 
     public int addNewQuestion(NewQuestionDTO newQuestion) {
-        return questionDAO.addQuestion(newQuestion);
+        Optional<UserEntity> user = userRepository.findById(newQuestion.userId());
+        if (user.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+        Question question = new Question();
+        question.setTitle(newQuestion.title());
+        question.setContent(newQuestion.content());
+        question.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        question.setAuthor(user.get());
+        Question saved = questionRepository.save(question);
+        return saved.getId();
+    }
+
+    public boolean deleteQuestion(int id) {
+        try {
+            questionRepository.deleteQuestionById(id);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Question not found");
+        }
     }
 }
