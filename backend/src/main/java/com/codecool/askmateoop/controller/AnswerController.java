@@ -1,7 +1,7 @@
 package com.codecool.askmateoop.controller;
 
-import com.codecool.askmateoop.controller.dto.answer.AnswerDTO;
-import com.codecool.askmateoop.controller.dto.answer.NewAnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
 import com.codecool.askmateoop.service.AnswerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

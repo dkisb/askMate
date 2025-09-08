@@ -7,6 +7,8 @@ import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "answers")
@@ -26,6 +28,12 @@ public class Answer implements Serializable {
     @CreationTimestamp
     private Timestamp createdAt;
 
+    @Column(nullable = false)
+    private int likes;
+
+    @Column(nullable = false)
+    private int dislikes;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;
@@ -33,6 +41,13 @@ public class Answer implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity author;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Answer parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Answer> replies = new ArrayList<>();
 }
 
 

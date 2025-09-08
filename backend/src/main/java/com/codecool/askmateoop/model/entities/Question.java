@@ -26,6 +26,12 @@ public class Question implements Serializable {
     private String title;
 
     @Column(nullable = false)
+    private int likes;
+
+    @Column(nullable = false)
+    private int dislikes;
+
+    @Column(nullable = false)
     private String content;
 
     @CreationTimestamp

@@ -1,4 +1,4 @@
-package com.codecool.askmateoop.controller.dto.question;
+package com.codecool.askmateoop.model.payload.dto.question;
 
 import java.sql.Timestamp;
 

@@ -1,63 +1,86 @@
 package com.codecool.askmateoop.service;
 
-import com.codecool.askmateoop.controller.dto.user.LoginDTO;
-import com.codecool.askmateoop.controller.dto.user.PointsDTO;
+import com.codecool.askmateoop.model.payload.dto.JwtResponse;
+import com.codecool.askmateoop.model.payload.dto.user.LoginDTO;
+import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
+import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
+import com.codecool.askmateoop.model.payload.dto.user.PointsDTO;
 import com.codecool.askmateoop.model.entities.Role;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.repository.UserRepository;
+import com.codecool.askmateoop.security.jwt.JwtUtils;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import com.codecool.askmateoop.controller.dto.user.NewUserDTO;
-import java.sql.Timestamp;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       AuthenticationManager authenticationManager,
+                       JwtUtils jwtUtils) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
     }
 
-    public LoginDTO loginUser(String name, String password) {
-        UserEntity user = userRepository.findByUsernameAndPassword(name, password)
-                .orElseThrow(() -> new IllegalArgumentException("Wrong username or password"));
-
-        return new LoginDTO(user.getUsername(), user.getId());
-    }
-
-    public int getReliabilityLevel(int id) {
-        return userRepository.findReliabilityPointsById(id);
-    }
-
-    public boolean addNewUser(NewUserDTO newUser) {
-        Optional<UserEntity> user = userRepository.findByUsername(newUser.username());
-        if (user.isPresent()) {
-            throw new IllegalArgumentException("User already exists");
-        } else {
-            UserEntity userEntity = new UserEntity();
-            userEntity.setUsername(newUser.username());
-            userEntity.setPassword(newUser.password());
-            userEntity.setEmail(newUser.email());
-            userEntity.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-            userEntity.setReliabilityPoints(0);
-            userEntity.setRoles(Set.of(Role.ROLE_USER));
-            userRepository.save(userEntity);
+    public void createUser(NewUserDTO request) {
+        if (userRepository.existsByUsername(request.username())) {
+            throw new RuntimeException("Error: Username is already taken!");
         }
-        return true;
+
+        if (userRepository.existsByEmail(request.email())) {
+            throw new RuntimeException("Error: Email is already in use!");
+        }
+
+        UserEntity user = new UserEntity();
+        user.setUsername(request.username());
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setRoles(Set.of(Role.ROLE_USER));
+
+        userRepository.save(user);
     }
 
-    public Map<String, String> addNewPoints(PointsDTO pointsDTO) {
-        Optional<UserEntity> user = userRepository.findById(pointsDTO.userId());
-        if (user.isEmpty()) {
-            return Map.of("message", "User not found");
-        }
-        UserEntity userEntity = user.get();
-        userEntity.setReliabilityPoints(userEntity.getReliabilityPoints() + pointsDTO.points());
-        userRepository.save(userEntity);
-        return Map.of("message", "Points added successfully");
+    public ResponseEntity<?> loginUser(LoginRequestDTO loginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password()));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtUtils.generateJwtToken(authentication);
+
+        User userDetails = (User) authentication.getPrincipal();
+        Set<Role> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .map(Role::valueOf)
+                .collect(Collectors.toSet());
+
+        return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getUsername(), roles));
     }
+
+    public int getUserId(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found with username: " + username))
+                .getId();
+    }
+
+
 }

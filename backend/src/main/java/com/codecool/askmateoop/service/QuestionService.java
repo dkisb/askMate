@@ -1,7 +1,7 @@
 package com.codecool.askmateoop.service;
 
-import com.codecool.askmateoop.controller.dto.question.NewQuestionDTO;
-import com.codecool.askmateoop.controller.dto.question.QuestionDTO;
+import com.codecool.askmateoop.model.payload.dto.question.NewQuestionDTO;
+import com.codecool.askmateoop.model.payload.dto.question.QuestionDTO;
 import com.codecool.askmateoop.model.entities.Question;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.repository.QuestionRepository;

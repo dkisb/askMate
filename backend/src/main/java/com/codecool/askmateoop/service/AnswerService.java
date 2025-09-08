@@ -1,7 +1,7 @@
 package com.codecool.askmateoop.service;
 
-import com.codecool.askmateoop.controller.dto.answer.AnswerDTO;
-import com.codecool.askmateoop.controller.dto.answer.NewAnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
 import com.codecool.askmateoop.model.entities.Answer;
 import com.codecool.askmateoop.model.entities.Question;
 import com.codecool.askmateoop.model.entities.UserEntity;
@@ -10,6 +10,7 @@ import com.codecool.askmateoop.repository.QuestionRepository;
 import com.codecool.askmateoop.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
