@@ -60,7 +60,7 @@ public class AnswerService {
         Optional<Answer> answer = answerRepository.findById(id);
 
         if(answer.isEmpty()){
-            throw new RuntimeException("Content is empty");
+            throw new RuntimeException("Answer not found");
         }
         Answer updatedAnswer= answer.get();
         updatedAnswer.setContent(answerDTO.content());
