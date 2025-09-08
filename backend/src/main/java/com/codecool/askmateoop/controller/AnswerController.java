@@ -1,7 +1,7 @@
 package com.codecool.askmateoop.controller;
 
-import com.codecool.askmateoop.controller.dto.answer.AnswerDTO;
-import com.codecool.askmateoop.controller.dto.answer.NewAnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
 import com.codecool.askmateoop.service.AnswerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -39,6 +39,12 @@ public class AnswerController {
             return new ResponseEntity<>(-1, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PatchMapping("/{id}")
+    public void updateAnswer(@PathVariable("id") int id, @RequestBody NewAnswerDTO answerDTO){
+        answerService.updateAnswer(id, answerDTO);
+    }
+
 
     @DeleteMapping("/{id}")
     public boolean deleteQuestionById(@PathVariable int id) {

@@ -1,7 +1,9 @@
 package com.codecool.askmateoop.service;
 
-import com.codecool.askmateoop.controller.dto.question.NewQuestionDTO;
-import com.codecool.askmateoop.controller.dto.question.QuestionDTO;
+import com.codecool.askmateoop.model.entities.Answer;
+import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.question.NewQuestionDTO;
+import com.codecool.askmateoop.model.payload.dto.question.QuestionDTO;
 import com.codecool.askmateoop.model.entities.Question;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.repository.QuestionRepository;
@@ -66,12 +68,16 @@ public class QuestionService {
         return saved.getId();
     }
 
-    public boolean deleteQuestion(int id) {
-        try {
-            questionRepository.deleteQuestionById(id);
-            return true;
-        } catch (Exception e) {
+    public void updateQuestion(int id, NewQuestionDTO questionDTO){
+        Optional<Question> question = questionRepository.findById(id);
+
+        if(question.isEmpty()){
             throw new RuntimeException("Question not found");
         }
+        Question updatedQuestion= question.get();
+        updatedQuestion.setTitle(questionDTO.title());
+        updatedQuestion.setContent(questionDTO.content());
+
+        questionRepository.save(updatedQuestion);
     }
 }

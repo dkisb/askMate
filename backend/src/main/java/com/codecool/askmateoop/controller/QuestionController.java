@@ -1,7 +1,7 @@
 package com.codecool.askmateoop.controller;
 
-import com.codecool.askmateoop.controller.dto.question.NewQuestionDTO;
-import com.codecool.askmateoop.controller.dto.question.QuestionDTO;
+import com.codecool.askmateoop.model.payload.dto.question.NewQuestionDTO;
+import com.codecool.askmateoop.model.payload.dto.question.QuestionDTO;
 import com.codecool.askmateoop.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +29,11 @@ public class QuestionController {
     @PostMapping("/")
     public int addNewQuestion(@RequestBody NewQuestionDTO question) {
         return questionService.addNewQuestion(question);
+    }
+
+    @PatchMapping("/{id}")
+    public void updateQuestion(@PathVariable("id") int id, @RequestBody NewQuestionDTO questionDTO){
+        questionService.updateQuestion(id, questionDTO);
     }
 
     @DeleteMapping("/{id}")

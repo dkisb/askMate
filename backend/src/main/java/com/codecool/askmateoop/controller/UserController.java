@@ -1,12 +1,12 @@
 
 package com.codecool.askmateoop.controller;
 
-import com.codecool.askmateoop.controller.dto.user.LoginDTO;
-import com.codecool.askmateoop.controller.dto.user.LoginRequestDTO;
-import com.codecool.askmateoop.controller.dto.user.NewUserDTO;
-import com.codecool.askmateoop.controller.dto.user.PointsDTO;
+import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
+import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
+import com.codecool.askmateoop.model.payload.dto.user.PointsDTO;
 import com.codecool.askmateoop.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
@@ -21,23 +21,21 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public LoginDTO loginUser(@RequestBody LoginRequestDTO loginRequest) {
-        return userService.loginUser(loginRequest.username(), loginRequest.password());
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequestDTO loginRequest) {
+        return userService.loginUser(loginRequest);
     }
 
+    @PostMapping("/register")
+    public void addNewUser(@RequestBody NewUserDTO newUser) {
+        userService.createUser(newUser);
+    }
 
     @GetMapping("/{user_id}/points")
     public int getPoints(@PathVariable int user_id) {
         return userService.getReliabilityLevel(user_id);
-    }
-
-    @PostMapping("/")
-    public boolean addNewUser(@RequestBody NewUserDTO newUser) {
-        return userService.addNewUser(newUser);
-    }
-
+   }
     @PatchMapping("/")
-    public Map<String, String> addNewPoints(@RequestBody PointsDTO pointsDTO) {
-        return userService.addNewPoints(pointsDTO);
+    public void addNewPoints(@RequestBody PointsDTO pointsDTO) {
+        userService.addNewPoints(pointsDTO);
     }
 }
