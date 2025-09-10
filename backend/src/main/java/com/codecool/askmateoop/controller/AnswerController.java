@@ -2,10 +2,9 @@ package com.codecool.askmateoop.controller;
 
 import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.UpdatedAnswerDTO;
 import com.codecool.askmateoop.service.AnswerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -24,30 +23,18 @@ public class AnswerController {
         return answerService.getAnswers(id);
     }
 
-
-    @PostMapping("/{question_id}")
-    public ResponseEntity<Integer> addNewAnswer(@PathVariable("question_id") int questionId, @RequestBody NewAnswerDTO newAnswerDTO) {
-        NewAnswerDTO answerToCreate = new NewAnswerDTO(
-                newAnswerDTO.content(),
-                questionId,
-                newAnswerDTO.userId()
-        );
-        int newAnswerId = answerService.addNewAnswer(answerToCreate);
-        if (newAnswerId > 0) {
-            return new ResponseEntity<>(newAnswerId, HttpStatus.CREATED);
-        } else  {
-            return new ResponseEntity<>(-1, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    @PostMapping("/")
+    public void addNewAnswer(@RequestBody NewAnswerDTO newAnswerDTO) {
+        answerService.addNewAnswer(newAnswerDTO);
     }
 
-    @PatchMapping("/{id}")
-    public void updateAnswer(@PathVariable("id") int id, @RequestBody NewAnswerDTO answerDTO){
-        answerService.updateAnswer(id, answerDTO);
+    @PatchMapping("/")
+    public void updateAnswer(@RequestBody UpdatedAnswerDTO answerDTO) {
+        answerService.updateAnswer(answerDTO);
     }
-
 
     @DeleteMapping("/{id}")
-    public boolean deleteQuestionById(@PathVariable int id) {
-        return answerService.deleteAnswer(id);
+    public void deleteQuestionById(@PathVariable int id) {
+        answerService.deleteAnswer(id);
     }
 }

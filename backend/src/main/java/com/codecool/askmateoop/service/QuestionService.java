@@ -1,17 +1,19 @@
 package com.codecool.askmateoop.service;
 
-import com.codecool.askmateoop.model.entities.Answer;
-import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
-import com.codecool.askmateoop.model.payload.dto.question.NewQuestionDTO;
-import com.codecool.askmateoop.model.payload.dto.question.QuestionDTO;
 import com.codecool.askmateoop.model.entities.Question;
 import com.codecool.askmateoop.model.entities.UserEntity;
+import com.codecool.askmateoop.model.payload.dto.question.NewQuestionDTO;
+import com.codecool.askmateoop.model.payload.dto.question.QuestionDTO;
+import com.codecool.askmateoop.model.payload.dto.question.UpdatedQuestionDTO;
 import com.codecool.askmateoop.repository.QuestionRepository;
 import com.codecool.askmateoop.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
-
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +39,7 @@ public class QuestionService {
     }
 
     public QuestionDTO getQuestionById(int id) {
-        Optional<Question> questionOpt = questionRepository.findQuestionById(id);
+        Optional<Question> questionOpt = questionRepository.findById(id);
         if (questionOpt.isEmpty()) {
             throw new RuntimeException("Question not found");
         }
@@ -45,39 +47,50 @@ public class QuestionService {
         return new QuestionDTO(question.getId(), question.getTitle(), question.getContent(), question.getCreatedAt());
     }
 
-    public boolean deleteQuestionById(int id) {
-        try {
-            questionRepository.deleteQuestionById(id);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException("Question not found");
+    public void deleteQuestionById(int id) {
+        Question question = questionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Question not found with id=" + id));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (question.getAuthor().getId() != currentUser.getId()) {
+            throw new AccessDeniedException("You can only delete your own questions");
         }
+        questionRepository.deleteById(id);
     }
 
     public int addNewQuestion(NewQuestionDTO newQuestion) {
-        Optional<UserEntity> user = userRepository.findById(newQuestion.userId());
-        if (user.isEmpty()) {
-            throw new RuntimeException("User not found");
-        }
+        UserEntity user = userRepository.findById(newQuestion.userId()).orElseThrow(() -> new RuntimeException("User not found"));
         Question question = new Question();
         question.setTitle(newQuestion.title());
         question.setContent(newQuestion.content());
-        question.setCreatedAt(new Timestamp(System.currentTimeMillis()));
-        question.setAuthor(user.get());
+        question.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
+        question.setAuthor(user);
         Question saved = questionRepository.save(question);
         return saved.getId();
     }
 
-    public void updateQuestion(int id, NewQuestionDTO questionDTO){
-        Optional<Question> question = questionRepository.findById(id);
-
-        if(question.isEmpty()){
-            throw new RuntimeException("Question not found");
+    public void updateQuestion(UpdatedQuestionDTO questionDTO) {
+        Question question = questionRepository.findById(questionDTO.id()).orElseThrow(() -> new RuntimeException("Question not found"));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new RuntimeException("User not found"));
+        if (question.getAuthor().getId() != currentUser.getId()) {
+            throw new AccessDeniedException("You do not have permission to update this question");
         }
-        Question updatedQuestion= question.get();
-        updatedQuestion.setTitle(questionDTO.title());
-        updatedQuestion.setContent(questionDTO.content());
+        question.setTitle(questionDTO.title());
+        question.setContent(questionDTO.content());
+        questionRepository.save(question);
+    }
 
-        questionRepository.save(updatedQuestion);
+    public void updateAnyQuestion(UpdatedQuestionDTO questionDTO) {
+        Question question = questionRepository.findById(questionDTO.id()).orElseThrow(() -> new RuntimeException("Question not found"));
+        question.setTitle(questionDTO.title());
+        question.setContent(questionDTO.content());
+        questionRepository.save(question);
+    }
+
+    public void deleteAnyQuestionById(int id) {
+        Question question = questionRepository.findById(id).orElseThrow(() -> new RuntimeException("Question not found"));
+        questionRepository.delete(question);
     }
 }

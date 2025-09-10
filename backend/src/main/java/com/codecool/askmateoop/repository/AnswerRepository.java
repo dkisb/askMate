@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface AnswerRepository extends JpaRepository<Answer, Long> {
+public interface AnswerRepository extends JpaRepository<Answer, Integer> {
     Optional<List<Answer>> getAllByQuestionId(int questionId);
-    Optional<Answer> findById(int id);
-    void deleteById(int id);
 }
