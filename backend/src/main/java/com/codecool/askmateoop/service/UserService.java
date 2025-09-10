@@ -1,5 +1,8 @@
 package com.codecool.askmateoop.service;
 
+import com.codecool.askmateoop.errorhandler.custom_exceptions.NotAllowedOperationException;
+import com.codecool.askmateoop.errorhandler.custom_exceptions.EmailAlreadyInUseException;
+import com.codecool.askmateoop.errorhandler.custom_exceptions.UsernameAlreadyExistsException;
 import com.codecool.askmateoop.model.payload.dto.JwtResponse;
 import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
 import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
@@ -11,7 +14,6 @@ import com.codecool.askmateoop.security.jwt.JwtUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,6 +23,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.EnumSet;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,10 +49,10 @@ public class UserService {
 
     public void createUser(NewUserDTO request) {
         if (userRepository.existsByUsername(request.username())) {
-            throw new RuntimeException("Error: Username is already taken!");
+            throw new UsernameAlreadyExistsException(request.username());
         }
         if (userRepository.existsByEmail(request.email())) {
-            throw new RuntimeException("Error: Email is already in use!");
+            throw new EmailAlreadyInUseException(request.email());
         }
         UserEntity user = new UserEntity();
         user.setUsername(request.username());
@@ -74,7 +77,7 @@ public class UserService {
 
     public int getUserId(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found with username: " + username))
+                .orElseThrow(() -> new NoSuchElementException("User not found with username: " + username))
                 .getId();
     }
 
@@ -85,7 +88,7 @@ public class UserService {
     public void addNewPoints (PointsDTO pointsDTO) {
         Optional<UserEntity> user = userRepository.findById(pointsDTO.userId());
         if(user.isEmpty()){
-            throw new RuntimeException("User not found");
+            throw new NoSuchElementException("User not found");
         }
         UserEntity userEntity = user.get();
         userEntity.setReliabilityPoints(userEntity.getReliabilityPoints() + pointsDTO.points());
@@ -94,27 +97,27 @@ public class UserService {
 
     public void deleteUser(int id) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new RuntimeException("User not found"));
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         if (currentUser.getId() != id) {
-            throw new AccessDeniedException("You are not allowed to delete this answer");
+            throw new NotAllowedOperationException("You are not allowed to delete this answer");
         }
         userRepository.delete(currentUser);
     }
 
     public void makeUserMod(int id) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found"));
         user.setRoles(EnumSet.of(Role.ROLE_USER, Role.ROLE_MODERATOR));
         userRepository.save(user);
     }
 
     public void makeModUser(int id) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found"));
         user.setRoles(EnumSet.of(Role.ROLE_USER));
         userRepository.save(user);
     }
 
     public void deleteAnyUser(int id) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found"));
         userRepository.delete(user);
     }
 }
