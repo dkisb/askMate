@@ -6,7 +6,6 @@ import com.codecool.askmateoop.errorhandler.custom_exceptions.UsernameAlreadyExi
 import com.codecool.askmateoop.model.entities.Role;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.model.payload.dto.JwtResponse;
-import com.codecool.askmateoop.model.payload.dto.user.LoginDTO;
 import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
 import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
 import com.codecool.askmateoop.model.payload.dto.user.PointsDTO;
@@ -300,5 +299,4 @@ public class UserServiceTest {
         assertThrows(NoSuchElementException.class, () -> userService.deleteAnyUser(user.getId()));
         verify(userRepository, never()).delete(any(UserEntity.class));
     }
-
 }
