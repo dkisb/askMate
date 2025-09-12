@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { saveAuthUser, clearAuthUser } from '../utils/auth.js';
 
 function LoginPage() {
   const [userName, setUserName] = useState(null);
@@ -78,6 +79,7 @@ function LoginPage() {
       setInvalidLogin(false);
       setIsLoggedIn(true);
       setUserId(loggedInUser.userId);
+      saveAuthUser({ userId: loggedInUser.userId, userName });
       setPassword(null);
     }
   }
@@ -99,6 +101,7 @@ function LoginPage() {
     setUserName(null);
     setUserId(null);
     clearJwtCookie();
+    clearAuthUser();
   }
 
   return (

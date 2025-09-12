@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { fetchQuestion, fetchComments, postAnswer, addPoints } from '../utils/api.js';
+import { loadAuthUser } from '../utils/auth.js';
 
 export default function QuestionPage() {
   const [question, setQuestion] = useState(null);
@@ -10,9 +11,16 @@ export default function QuestionPage() {
   const { id } = useParams();
 
   const location = useLocation();
-  const { userId } = location.state || {};
+  const navigate = useNavigate();
+  const fromState = location.state || {};
+  const authUser = loadAuthUser();
+  const userId = fromState.userId || (authUser && authUser.userId);
 
   useEffect(() => {
+    if (!userId) {
+      navigate('/', { replace: true });
+      return;
+    }
     let isCancelled = false;
     async function loadQuestion() {
       if (!id) return;

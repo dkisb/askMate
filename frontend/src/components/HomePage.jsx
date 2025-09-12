@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { fetchAllQuestions, createQuestion, addPoints } from '../utils/api.js';
+import { loadAuthUser } from '../utils/auth.js';
 
 export default function HomePage() {
   const [questions, setQuestions] = useState([]);
@@ -8,35 +10,38 @@ export default function HomePage() {
   const [questionContent, setQuestionContent] = useState('');
 
   const location = useLocation();
-  const { userName, userId } = location.state || {};
+  const navigate = useNavigate();
+  const fromState = location.state || {};
+  const authUser = loadAuthUser();
+  const userName = fromState.userName || (authUser && authUser.userName);
+  const userId = fromState.userId || (authUser && authUser.userId);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/question/all');
-      const data = await response.json();
-      console.log(data);
-      setQuestions(data);
-      setLoading(false);
+      const data = await fetchAllQuestions();
+      setQuestions(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching questions:', error);
+    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (!userId) {
+      navigate('/', { replace: true });
+      return;
+    }
     fetchData();
-  }, []);
+  }, [userId, navigate]);
 
-  async function addPoints() {
-    const response = await fetch('/api/user/', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId: userId, points: 5}),
-    });
-    const data = await response.json();
-    console.log(data);
+  async function awardQuestionPoints() {
+    try {
+      await addPoints(userId, 5);
+    } catch (error) {
+      console.error('Error adding points:', error);
+    }
   }
 
   const handleSubmit = async (event) => {
@@ -44,19 +49,11 @@ export default function HomePage() {
     console.log('Title:', questionTitle);
     console.log('Content:', questionContent);
     try {
-      const response = await fetch('/api/question/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title: questionTitle, content: questionContent, userId: userId}),
-      });
-      const data = await response.json();
-      console.log('New question created:', data);
+      await createQuestion(questionTitle, questionContent, userId);
       setQuestionTitle('');
       setQuestionContent('');
       fetchData();
-      addPoints();
+      awardQuestionPoints();
     } catch (error) {
       console.error('Error creating question:', error);
     }
