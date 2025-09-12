@@ -1,6 +1,5 @@
 package com.codecool.askmateoop.security;
 
-
 import com.codecool.askmateoop.security.jwt.AuthEntryPointJwt;
 import com.codecool.askmateoop.security.jwt.AuthTokenFilter;
 import com.codecool.askmateoop.security.jwt.JwtUtils;
@@ -19,7 +18,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 
 @Configuration
 @EnableWebSecurity
@@ -64,18 +62,17 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // moderator endpoints
-                        .requestMatchers("/api/moderator/**").hasAnyRole("MODERATOR", "ADMIN" )
-
-                        // user endpoints
                         .requestMatchers("/api/user/register").permitAll()
                         .requestMatchers("/api/user/login").permitAll()
-                        .requestMatchers("/api/question/**").hasRole("USER")
-
-                        // anything else (POST/DELETE/PUT) requires authentication
+                        .requestMatchers(HttpMethod.GET, "/api/question/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/answer/**").permitAll()
+                        .requestMatchers("/api/user/points/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/question/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/answer/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PUT, "/api/question/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/answer/**").hasRole("USER")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/moderator/**").hasRole("MODERATOR")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

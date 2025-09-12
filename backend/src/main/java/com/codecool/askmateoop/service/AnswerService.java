@@ -1,19 +1,24 @@
 package com.codecool.askmateoop.service;
 
+import com.codecool.askmateoop.errorhandler.custom_exceptions.NotAllowedOperationException;
 import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
 import com.codecool.askmateoop.model.entities.Answer;
 import com.codecool.askmateoop.model.entities.Question;
 import com.codecool.askmateoop.model.entities.UserEntity;
+import com.codecool.askmateoop.model.payload.dto.answer.UpdatedAnswerDTO;
 import com.codecool.askmateoop.repository.AnswerRepository;
 import com.codecool.askmateoop.repository.QuestionRepository;
 import com.codecool.askmateoop.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
@@ -31,49 +36,50 @@ public class AnswerService {
     }
 
     public List<AnswerDTO> getAnswers(int questionId) {
-        Optional<List<Answer>> answers = answerRepository.getAllByQuestionId(questionId);
-        Optional<Question> question = questionRepository.findById(questionId);
-
-        if (answers.isEmpty() || question.isEmpty()) {
-            throw new RuntimeException("Something went wrong");
-        }
-        UserEntity user = question.get().getAuthor();
-        return answers.get().stream().map(a -> new AnswerDTO(a.getContent(), a.getCreatedAt(), user.getId())).toList();
+        questionRepository.findById(questionId).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + questionId));
+        List<Answer> answers = answerRepository.getAllByQuestionId(questionId).orElseThrow(() -> new NoSuchElementException("Answers not found with questionId: " + questionId));
+        return answers.stream().map(a -> new AnswerDTO(a.getId(), a.getContent(), a.getCreatedAt())).toList();
     }
 
-    public int addNewAnswer(NewAnswerDTO answer) {
-        Optional<Question> question = questionRepository.findQuestionById(answer.questionId());
-        Optional<UserEntity> user = userRepository.findById(answer.userId());
-        if (question.isEmpty() || user.isEmpty()) {
-            throw new RuntimeException("Something went wrong");
-        }
-        Answer newAnswer = new Answer();
-        newAnswer.setContent(answer.content());
-        newAnswer.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
-        newAnswer.setQuestion(question.get());
-        newAnswer.setAuthor(user.get());
-        Answer savedAnswer = answerRepository.save(newAnswer);
-        return savedAnswer.getId();
+    public void addNewAnswer(NewAnswerDTO answerDTO) {
+        Question question = questionRepository.findById(answerDTO.questionId()).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + answerDTO.questionId()));
+        Answer answer = new Answer();
+        answer.setContent(answerDTO.content());
+        answer.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
+        answer.setQuestion(question);
+        answer.setAuthor(question.getAuthor());
+        answerRepository.save(answer);
     }
 
-    public void updateAnswer(int id, NewAnswerDTO answerDTO){
-        Optional<Answer> answer = answerRepository.findById(id);
-
-        if(answer.isEmpty()){
-            throw new RuntimeException("Content is empty");
+    public void updateAnswer(UpdatedAnswerDTO answerDTO) {
+        Answer answer = answerRepository.findById(answerDTO.id()).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + answerDTO.id()));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        if (answer.getAuthor().getId() != currentUser.getId()) {
+            throw new NotAllowedOperationException("You are allowed only to edit your own answer");
         }
-        Answer updatedAnswer= answer.get();
-        updatedAnswer.setContent(answerDTO.content());
-
-        answerRepository.save(updatedAnswer);
+        answer.setContent(answerDTO.content());
+        answerRepository.save(answer);
     }
 
-    public boolean deleteAnswer(int id){
-        try {
-            answerRepository.deleteById(id);
-            return true;
-        } catch (Exception e) {
-            return false;
+    public void deleteAnswer(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        if (answer.getAuthor().getId() != currentUser.getId()) {
+            throw new NotAllowedOperationException("You are allowed only to delete your own answer");
         }
+        answerRepository.deleteById(id);
+    }
+
+    public void updateAnyAnswer(UpdatedAnswerDTO answerDTO) {
+        Answer answer = answerRepository.findById(answerDTO.id()).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + answerDTO.id()));
+        answer.setContent(answerDTO.content());
+        answerRepository.save(answer);
+    }
+
+    public void deleteAnyAnswer(int id) {
+        answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        answerRepository.deleteById(id);
     }
 }

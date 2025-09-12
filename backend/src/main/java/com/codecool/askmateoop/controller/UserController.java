@@ -8,7 +8,6 @@ import com.codecool.askmateoop.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -25,17 +24,28 @@ public class UserController {
         return userService.loginUser(loginRequest);
     }
 
+    @PostMapping("/")
+    public void addPoints(@RequestBody PointsDTO pointsDTO) {
+        userService.addNewPoints(pointsDTO);
+    }
+
     @PostMapping("/register")
     public void addNewUser(@RequestBody NewUserDTO newUser) {
         userService.createUser(newUser);
     }
 
-    @GetMapping("/{user_id}/points")
+    @GetMapping("/points/{user_id}")
     public int getPoints(@PathVariable int user_id) {
         return userService.getReliabilityLevel(user_id);
    }
-    @PatchMapping("/")
+
+   @PatchMapping("/")
     public void addNewPoints(@RequestBody PointsDTO pointsDTO) {
         userService.addNewPoints(pointsDTO);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteUser(@PathVariable int id) {
+        userService.deleteUser(id);
     }
 }
