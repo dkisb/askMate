@@ -24,12 +24,17 @@ public class UserController {
         return userService.loginUser(loginRequest);
     }
 
+    @PostMapping("/")
+    public void addPoints(@RequestBody PointsDTO pointsDTO) {
+        userService.addNewPoints(pointsDTO);
+    }
+
     @PostMapping("/register")
     public void addNewUser(@RequestBody NewUserDTO newUser) {
         userService.createUser(newUser);
     }
 
-    @GetMapping("/{user_id}/points")
+    @GetMapping("/points/{user_id}")
     public int getPoints(@PathVariable int user_id) {
         return userService.getReliabilityLevel(user_id);
    }

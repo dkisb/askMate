@@ -12,6 +12,8 @@ import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.repository.UserRepository;
 import com.codecool.askmateoop.security.jwt.JwtUtils;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +37,8 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
 
     @Autowired
     public UserService(UserRepository userRepository,
@@ -58,7 +62,7 @@ public class UserService {
         user.setUsername(request.username());
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRoles(EnumSet.of(Role.ROLE_USER, Role.ROLE_MODERATOR, Role.ROLE_ADMIN));
+        user.setRoles(EnumSet.of(Role.ROLE_USER));
         userRepository.save(user);
     }
 
@@ -82,17 +86,14 @@ public class UserService {
     }
 
     public int getReliabilityLevel (int userId) {
-        return userRepository.findReliabilityPointsById(userId);
+        UserEntity user = userRepository.findById(userId).orElseThrow(() -> new NoSuchElementException("User not found with userId: " + userId));
+        return user.getReliabilityPoints();
     }
 
     public void addNewPoints (PointsDTO pointsDTO) {
-        Optional<UserEntity> user = userRepository.findById(pointsDTO.userId());
-        if(user.isEmpty()){
-            throw new NoSuchElementException("User not found");
-        }
-        UserEntity userEntity = user.get();
-        userEntity.setReliabilityPoints(userEntity.getReliabilityPoints() + pointsDTO.points());
-        userRepository.save(userEntity);
+        UserEntity user = userRepository.findById(pointsDTO.userId()).orElseThrow(() -> new NoSuchElementException("User not found with userId: " + pointsDTO.userId()));
+        user.setReliabilityPoints(user.getReliabilityPoints() + pointsDTO.points());
+        userRepository.save(user);
     }
 
     public void deleteUser(int id) {
