@@ -12,6 +12,22 @@ function LoginPage() {
   const [invalidLogin, setInvalidLogin] = useState(false);
   const [userId, setUserId] = useState(null);
 
+  function setJwtCookie(token) {
+    const cookieParts = [
+      `jwt=${encodeURIComponent(token)}`,
+      'Path=/',
+      'SameSite=Lax',
+    ];
+    if (window.location.protocol === 'https:') {
+      cookieParts.push('Secure');
+    }
+    document.cookie = cookieParts.join('; ');
+  }
+
+  function clearJwtCookie() {
+    document.cookie = 'jwt=; Max-Age=0; Path=/; SameSite=Lax';
+  }
+
   function handleNewUser() {
     setIsNewUser(true);
   }
@@ -21,6 +37,7 @@ function LoginPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user),
+      credentials: 'include',
     });
     const isUserNameExists = await response.json();
     if (isUserNameExists) {
@@ -40,11 +57,24 @@ function LoginPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user),
+      credentials: 'include',
     });
     const loggedInUser = await response.json();
     if (loggedInUser.userId == 0) {
       setInvalidLogin(true);
     } else {
+      // Try to read JWT from Authorization header first, then from body fallbacks
+      const authHeader = response.headers.get('Authorization') || response.headers.get('authorization');
+      let token = null;
+      if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+        token = authHeader.slice(7);
+      }
+      if (!token && loggedInUser) {
+        token = loggedInUser.token || loggedInUser.jwt || loggedInUser.accessToken || null;
+      }
+      if (token) {
+        setJwtCookie(token);
+      }
       setInvalidLogin(false);
       setIsLoggedIn(true);
       setUserId(loggedInUser.userId);
@@ -68,6 +98,7 @@ function LoginPage() {
     setIsLoggedIn(false);
     setUserName(null);
     setUserId(null);
+    clearJwtCookie();
   }
 
   return (

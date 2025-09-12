@@ -1,93 +1,79 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
+import { fetchQuestion, fetchComments, postAnswer, addPoints } from '../utils/api.js';
 
 export default function QuestionPage() {
   const [question, setQuestion] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [commentText, setCommentText] = useState('');
-  //const [newAnswerCreated, setNewAnswerCreated] = useState(false);
-  const [newCommentData, setNewCommentData] = useState(null);
+  const [commentText, setCommentText] = useState('');  
   const { id } = useParams();
 
   const location = useLocation();
-  const { userName, userId, questionUserId } = location.state || {};
+  const { userId } = location.state || {};
 
   useEffect(() => {
-    const fetchQuestion = async () => {
+    let isCancelled = false;
+    async function loadQuestion() {
+      if (!id) return;
+      setLoading(true);
       try {
-        const response = await fetch(`/api/question/${id}`);
-        const data = await response.json();
-        console.log(data)
-        setQuestion(data);
-        setLoading(false);
+        const data = await fetchQuestion(id);
+        if (!isCancelled) {
+          setQuestion(data);
+        }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error loading question:', error);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
+    }
+    loadQuestion();
+    return () => {
+      isCancelled = true;
     };
-
-    if (id) fetchQuestion();
   }, [id]);
 
  
 
   useEffect(() => {
-    const fetchComments = async () => {
+    let isCancelled = false;
+    async function loadComments() {
+      if (!id) return;
       try {
-        const response = await fetch(`/api/answer/${id}`);
-        const data = await response.json();
-        console.log(data)
-        setComments(data);
+        const data = await fetchComments(id);
+        if (!isCancelled) {
+          setComments(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error loading comments:', error);
       }
+    }
+    loadComments();
+    return () => {
+      isCancelled = true;
     };
-    fetchComments()
   }, [id]);
 
-  async function addPoints() {
-    const response = await fetch('/api/user/', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId: userId, points: 10}),
-    });
-    const data = await response.json();
-    console.log(data);
-  }
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
 
     try {
-      const response = await fetch(`/api/answer/${id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: commentText,
-          userId: userId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const newAnswerId = await response.json();
+      const newAnswerId = await postAnswer(id, commentText, userId);
       const newComment = {
         id: newAnswerId,
         content: commentText,
         userId: userId,
         createdAt: new Date().toISOString(),
       };
-      setNewCommentData(newComment);
       setComments([...comments, newComment]);
       setCommentText('');
-      //setNewAnswerCreated(true);
-      addPoints();
+      await addPoints(userId);
     } catch (error) {
       console.error('Error posting comment:', error);
       alert('Failed to post comment. Please try again.');
