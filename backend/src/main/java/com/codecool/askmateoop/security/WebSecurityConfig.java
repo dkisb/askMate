@@ -66,6 +66,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/user/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/question/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/answer/**").permitAll()
+                        .requestMatchers("/api/user/points/**").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/question/**").hasRole("USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/answer/**").hasRole("USER")
                         .requestMatchers(HttpMethod.PUT, "/api/question/**").hasRole("USER")
