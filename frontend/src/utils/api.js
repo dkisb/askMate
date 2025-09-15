@@ -1,6 +1,17 @@
+function getAuthHeader() {
+  const token = (() => {
+    try { return localStorage.getItem('jwtToken'); } catch { return null; }
+  })();
+  return token ? { Authorization: 'Bearer ' + token } : {};
+}
+
 export const fetchComments = async (id) => {
   try {
-    const response = await fetch(`/api/answer/${id}`, { credentials: 'include' });
+    const response = await fetch(`/api/answer/${id}`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch comments: ${response.status}`);
     }
@@ -14,7 +25,11 @@ export const fetchComments = async (id) => {
 
 export const fetchQuestion = async (id) => {
   try {
-    const response = await fetch(`/api/question/${id}`, { credentials: 'include' });
+    const response = await fetch(`/api/question/${id}`, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch question: ${response.status}`);
     }
@@ -28,18 +43,24 @@ export const fetchQuestion = async (id) => {
 
 export async function postAnswer(questionId, content, userId) {
   try {
-    const response = await fetch(`/api/answer/${questionId}`, {
+    const response = await fetch(`/api/answer/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeader(),
       },
-      credentials: 'include',
-      body: JSON.stringify({ content, userId }),
+      body: JSON.stringify({ content, questionId: Number(questionId), userId }),
     });
     if (!response.ok) {
-      throw new Error(`Failed to post answer: ${response.status}`);
+      let details = '';
+      try {
+        details = await response.text();
+      } catch {
+        // ignore
+      }
+      throw new Error(`Failed to post answer: ${response.status} ${details}`);
     }
-    return await response.json();
+    return true;
   } catch (error) {
     console.error('Error posting answer:', error);
     throw error;
@@ -52,14 +73,14 @@ export async function addPoints(userId, points = 10) {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeader(),
       },
-      credentials: 'include',
       body: JSON.stringify({ userId, points }),
     });
     if (!response.ok) {
       throw new Error(`Failed to add points: ${response.status}`);
     }
-    return await response.json();
+    return true;
   } catch (error) {
     console.error('Error adding points:', error);
     throw error;
@@ -68,7 +89,11 @@ export async function addPoints(userId, points = 10) {
 
 export const fetchAllQuestions = async () => {
   try {
-    const response = await fetch('/api/question/all', { credentials: 'include' });
+    const response = await fetch('/api/question/all', {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch questions: ${response.status}`);
     }
@@ -85,8 +110,8 @@ export const createQuestion = async (title, content, userId) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeader(),
       },
-      credentials: 'include',
       body: JSON.stringify({ title, content, userId }),
     });
     if (!response.ok) {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { fetchQuestion, fetchComments, postAnswer, addPoints } from '../utils/api.js';
-import { loadAuthUser } from '../utils/auth.js';
+import { formatRelativeTime, formatExactTime } from '../utils/transformDate.jsx';
 
 export default function QuestionPage() {
   const [question, setQuestion] = useState(null);
@@ -13,14 +13,32 @@ export default function QuestionPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const fromState = location.state || {};
-  const authUser = loadAuthUser();
-  const userId = fromState.userId || (authUser && authUser.userId);
+  const [currentUserId, setCurrentUserId] = useState(fromState.userId || null);
 
   useEffect(() => {
-    if (!userId) {
-      navigate('/', { replace: true });
-      return;
+    async function ensureUser() {
+      if (currentUserId) return;
+      const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
+      if (!token) {
+        navigate('/', { replace: true });
+        return;
+      }
+      try {
+        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!meRes.ok) {
+          navigate('/', { replace: true });
+          return;
+        }
+        const me = await meRes.json();
+        const idFromMe = me.userId ?? me.id ?? null;
+        if (idFromMe) setCurrentUserId(idFromMe);
+        else navigate('/', { replace: true });
+      } catch (error) {
+        console.error('Failed to resolve current user:', error);
+        navigate('/', { replace: true });
+      }
     }
+    ensureUser();
     let isCancelled = false;
     async function loadQuestion() {
       if (!id) return;
@@ -42,7 +60,7 @@ export default function QuestionPage() {
     return () => {
       isCancelled = true;
     };
-  }, [id]);
+  }, [id, currentUserId, navigate]);
 
  
 
@@ -72,19 +90,26 @@ export default function QuestionPage() {
     if (!commentText.trim()) return;
 
     try {
-      const newAnswerId = await postAnswer(id, commentText, userId);
-      const newComment = {
-        id: newAnswerId,
-        content: commentText,
-        userId: userId,
-        createdAt: new Date().toISOString(),
-      };
-      setComments([...comments, newComment]);
-      setCommentText('');
-      await addPoints(userId);
+      await postAnswer(id, commentText, currentUserId);
     } catch (error) {
       console.error('Error posting comment:', error);
       alert('Failed to post comment. Please try again.');
+      return;
+    }
+
+    const newComment = {
+      id: null,
+      content: commentText,
+      userId: currentUserId,
+      createdAt: new Date().toISOString(),
+    };
+    setComments([...comments, newComment]);
+    setCommentText('');
+
+    try {
+      await addPoints(currentUserId);
+    } catch (err) {
+      console.warn('Failed to add points:', err);
     }
   };
 
@@ -101,7 +126,9 @@ export default function QuestionPage() {
         <div className="mb-6">
           <h2 className="text-xl font-semibold">{question.title}</h2>
           <p className="text-gray-500">{question.content}</p>
-          <small className="text-gray-600">Created: {question.created}</small>
+          <small className="text-gray-600" title={formatExactTime(question.created || question.createdAt)}>
+             {formatRelativeTime(question.created || question.createdAt)}
+          </small>
         </div>
       )}
       <form className="mb-6" onSubmit={handleSubmit}>
@@ -129,8 +156,9 @@ export default function QuestionPage() {
         sortedComments.map((comment, index) => (
           <div key={index} className="p-6 mb-3 bg-white rounded-lg border-t border-gray-200">
             <p className="text-lg font-bold mb-4">{comment.content}</p>
-            <small className="text-gray-600">
-              {comment.created} </small>
+            <small className="text-gray-600" title={formatExactTime(comment.created || comment.createdAt)}>
+              {formatRelativeTime(comment.created || comment.createdAt)}
+            </small>
           </div>
         ))
       ) : (

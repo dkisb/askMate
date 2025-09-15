@@ -1,107 +1,101 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { saveAuthUser, clearAuthUser } from '../utils/auth.js';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../context/UserContext.jsx';
 
 function LoginPage() {
-  const [userName, setUserName] = useState(null);
-  const [password, setPassword] = useState(null);
-  const [email, setEmail] = useState(null);
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
-  const [userExists, setUserExists] = useState(false);
-  const [successfulRegistration, setSuccessfulregistration] = useState(false);
-  const [invalidLogin, setInvalidLogin] = useState(false);
-  const [userId, setUserId] = useState(null);
+  const [successfulRegistration, setSuccessfulRegistration] = useState(false);
+  const [userExists] = useState(false);
+  const { login } = useUser();
 
-  function setJwtCookie(token) {
-    const cookieParts = [
-      `jwt=${encodeURIComponent(token)}`,
-      'Path=/',
-      'SameSite=Lax',
-    ];
-    if (window.location.protocol === 'https:') {
-      cookieParts.push('Secure');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Future: hydrate from persisted auth here if needed
+  }, []);
+
+  async function postLogin() {
+    try {
+      const response = await fetch('/api/user/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: userName, password }),
+      });
+      if (!response.ok) {
+        throw new Error('Invalid login');
+      }
+      const data = await response.json();
+      // Extract JWT from response body or Authorization header
+      const headerToken = response.headers && response.headers.get && response.headers.get('Authorization');
+      let jwt = data && (data.jwt || data.token || data.accessToken) || null;
+      if (!jwt && headerToken && headerToken.startsWith('Bearer ')) {
+        jwt = headerToken.slice('Bearer '.length);
+      }
+      if (!jwt) {
+        throw new Error('Login failed: missing token');
+      }
+      try {
+        localStorage.setItem('jwtToken', jwt);
+      } catch (error) {
+        console.error('Error setting JWT token:', error);
+      }
+
+      // Fetch current user using JWT
+      const meRes = await fetch('/api/user/me', {
+        headers: { Authorization: 'Bearer ' + jwt },
+      });
+      if (!meRes.ok) {
+        throw new Error('Could not fetch user info');
+      }
+      const me = await meRes.json();
+      const normalizedUserName = me.userName ?? me.username ?? userName;
+      const normalizedUserId = me.userId ?? me.userid ?? me.id ?? null;
+
+      login({ userName: normalizedUserName, userId: normalizedUserId });
+      setIsLoggedIn(true);
+      setError(null);
+      navigate('/home', { state: { userName: normalizedUserName, userId: normalizedUserId } });
+    } catch (error) {
+      setError(error.message);
     }
-    document.cookie = cookieParts.join('; ');
   }
 
-  function clearJwtCookie() {
-    document.cookie = 'jwt=; Max-Age=0; Path=/; SameSite=Lax';
+  function handleLogin(e) {
+    e.preventDefault();
+    postLogin();
   }
 
-  function handleNewUser() {
+  function handleNewUser(e) {
+    e.preventDefault();
     setIsNewUser(true);
   }
 
-  async function postRegistration(user) {
-    const response = await fetch('/api/user/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user),
-      credentials: 'include',
-    });
-    const isUserNameExists = await response.json();
-    if (isUserNameExists) {
-      setUserExists(true);
-    } else {
-      setUserExists(false);
-      setIsNewUser(false);
-      setSuccessfulregistration(true);
-      setPassword(null);
-      setEmail(null);
-      setUserName(null);
-    }
-  }
-
-  async function postLogin(user) {
-    const response = await fetch('/api/user/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(user),
-      credentials: 'include',
-    });
-    const loggedInUser = await response.json();
-    if (loggedInUser.userId == 0) {
-      setInvalidLogin(true);
-    } else {
-      // Try to read JWT from Authorization header first, then from body fallbacks
-      const authHeader = response.headers.get('Authorization') || response.headers.get('authorization');
-      let token = null;
-      if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
-        token = authHeader.slice(7);
+  async function postRegistration() {
+    try {
+      const response = await fetch('/api/user/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: userName, password, email }),
+      });
+      if (!response.ok) {
+        throw new Error('Registration failed');
       }
-      if (!token && loggedInUser) {
-        token = loggedInUser.token || loggedInUser.jwt || loggedInUser.accessToken || null;
-      }
-      if (token) {
-        setJwtCookie(token);
-      }
-      setInvalidLogin(false);
-      setIsLoggedIn(true);
-      setUserId(loggedInUser.userId);
-      saveAuthUser({ userId: loggedInUser.userId, userName });
-      setPassword(null);
+      setSuccessfulRegistration(true);
+      await postLogin();
+    } catch (e) {
+      setError(e.message);
     }
   }
 
   function handleRegistration(e) {
     e.preventDefault();
-    const user = { username: userName, password: password, email: email };
-    postRegistration(user);
-  }
-
-  function handleLogin(e) {
-    e.preventDefault();
-    const user = { username: userName, password: password };
-    postLogin(user);
-  }
-
-  function handleLogout() {
-    setIsLoggedIn(false);
-    setUserName(null);
-    setUserId(null);
-    clearJwtCookie();
-    clearAuthUser();
+    postRegistration();
   }
 
   return (
@@ -139,9 +133,9 @@ function LoginPage() {
               Register
             </button>
           </div>
-          {invalidLogin && (
+          {error && (
             <div className="text-center text-red-500 text-sm">
-              <h2>Wrong username or password. Please try again!</h2>
+              <h2>{error}</h2>
             </div>
           )}
         </div>
@@ -192,25 +186,6 @@ function LoginPage() {
       {successfulRegistration && !isLoggedIn && (
         <div className="mt-4 text-center text-green-500">
           <h2>Successful registration! Please login!</h2>
-        </div>
-      )}
-
-      {isLoggedIn && (
-        <div className="w-full max-w-md bg-white rounded-lg shadow dark:bg-gray-800 dark:border dark:border-gray-700 p-8 mt-6 space-y-6 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome, {userName}!</h2>
-          <Link
-            to={`/home`}
-            state={{ userName, userId }}
-            className="w-full inline-block text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg"
-          >
-            Go to Homepage
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg"
-          >
-            Logout
-          </button>
         </div>
       )}
     </div>
