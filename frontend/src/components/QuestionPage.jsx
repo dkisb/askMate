@@ -1,96 +1,115 @@
 import { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { fetchQuestion, fetchComments, postAnswer, addPoints } from '../utils/api.js';
+import { formatRelativeTime, formatExactTime } from '../utils/transformDate.jsx';
 
 export default function QuestionPage() {
   const [question, setQuestion] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [commentText, setCommentText] = useState('');
-  //const [newAnswerCreated, setNewAnswerCreated] = useState(false);
-  const [newCommentData, setNewCommentData] = useState(null);
+  const [commentText, setCommentText] = useState('');  
   const { id } = useParams();
 
   const location = useLocation();
-  const { userName, userId, questionUserId } = location.state || {};
+  const navigate = useNavigate();
+  const fromState = location.state || {};
+  const [currentUserId, setCurrentUserId] = useState(fromState.userId || null);
 
   useEffect(() => {
-    const fetchQuestion = async () => {
-      try {
-        const response = await fetch(`/api/question/${id}`);
-        const data = await response.json();
-        console.log(data)
-        setQuestion(data);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+    async function ensureUser() {
+      if (currentUserId) return;
+      const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
+      if (!token) {
+        navigate('/', { replace: true });
+        return;
       }
+      try {
+        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!meRes.ok) {
+          navigate('/', { replace: true });
+          return;
+        }
+        const me = await meRes.json();
+        const idFromMe = me.userId ?? me.id ?? null;
+        if (idFromMe) setCurrentUserId(idFromMe);
+        else navigate('/', { replace: true });
+      } catch (error) {
+        console.error('Failed to resolve current user:', error);
+        navigate('/', { replace: true });
+      }
+    }
+    ensureUser();
+    let isCancelled = false;
+    async function loadQuestion() {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const data = await fetchQuestion(id);
+        if (!isCancelled) {
+          setQuestion(data);
+        }
+      } catch (error) {
+        console.error('Error loading question:', error);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+    loadQuestion();
+    return () => {
+      isCancelled = true;
     };
-
-    if (id) fetchQuestion();
-  }, [id]);
+  }, [id, currentUserId, navigate]);
 
  
 
   useEffect(() => {
-    const fetchComments = async () => {
+    let isCancelled = false;
+    async function loadComments() {
+      if (!id) return;
       try {
-        const response = await fetch(`/api/answer/${id}`);
-        const data = await response.json();
-        console.log(data)
-        setComments(data);
+        const data = await fetchComments(id);
+        if (!isCancelled) {
+          setComments(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error loading comments:', error);
       }
+    }
+    loadComments();
+    return () => {
+      isCancelled = true;
     };
-    fetchComments()
   }, [id]);
 
-  async function addPoints() {
-    const response = await fetch('/api/user/', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId: userId, points: 10}),
-    });
-    const data = await response.json();
-    console.log(data);
-  }
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!commentText.trim()) return;
 
     try {
-      const response = await fetch(`/api/answer/${id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: commentText,
-          userId: userId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const newAnswerId = await response.json();
-      const newComment = {
-        id: newAnswerId,
-        content: commentText,
-        userId: userId,
-        createdAt: new Date().toISOString(),
-      };
-      setNewCommentData(newComment);
-      setComments([...comments, newComment]);
-      setCommentText('');
-      //setNewAnswerCreated(true);
-      addPoints();
+      await postAnswer(id, commentText, currentUserId);
     } catch (error) {
       console.error('Error posting comment:', error);
       alert('Failed to post comment. Please try again.');
+      return;
+    }
+
+    const newComment = {
+      id: null,
+      content: commentText,
+      userId: currentUserId,
+      createdAt: new Date().toISOString(),
+    };
+    setComments([...comments, newComment]);
+    setCommentText('');
+
+    try {
+      await addPoints(currentUserId);
+    } catch (err) {
+      console.warn('Failed to add points:', err);
     }
   };
 
@@ -107,7 +126,9 @@ export default function QuestionPage() {
         <div className="mb-6">
           <h2 className="text-xl font-semibold">{question.title}</h2>
           <p className="text-gray-500">{question.content}</p>
-          <small className="text-gray-600">Created: {question.created}</small>
+          <small className="text-gray-600" title={formatExactTime(question.created || question.createdAt)}>
+             {formatRelativeTime(question.created || question.createdAt)}
+          </small>
         </div>
       )}
       <form className="mb-6" onSubmit={handleSubmit}>
@@ -135,8 +156,9 @@ export default function QuestionPage() {
         sortedComments.map((comment, index) => (
           <div key={index} className="p-6 mb-3 bg-white rounded-lg border-t border-gray-200">
             <p className="text-lg font-bold mb-4">{comment.content}</p>
-            <small className="text-gray-600">
-              {comment.created} </small>
+            <small className="text-gray-600" title={formatExactTime(comment.created || comment.createdAt)}>
+              {formatRelativeTime(comment.created || comment.createdAt)}
+            </small>
           </div>
         ))
       ) : (
