@@ -53,7 +53,7 @@ public class AnswerController {
         answerService.dislikeAnswer(id);
     }
 
-    @DeleteMapping("/dislike/{id}")
+    @DeleteMapping("/{id}")
     public void deleteQuestionById(@PathVariable int id) {
         answerService.deleteAnswer(id);
     }
