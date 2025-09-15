@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ThumbsUp, ThumbsDown, Share } from 'lucide-react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { fetchQuestion, fetchComments, postAnswer, addPoints, likeQuestion, dislikeQuestion, likeAnswer, dislikeAnswer, fetchQuestionLikesCount, fetchAnswerLikesCount } from '../utils/api.js';
@@ -9,6 +9,7 @@ export default function QuestionPage() {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');  
+  const commentRef = useRef(null);
   const { id } = useParams();
   const [postReaction, setPostReaction] = useState(null);
   const [commentReactions, setCommentReactions] = useState({});
@@ -119,6 +120,15 @@ export default function QuestionPage() {
     }, 5000);
     return () => clearInterval(intervalId);
   }, [id]);
+
+  // Auto-resize the comment textarea based on input length
+  useEffect(() => {
+    if (commentRef.current) {
+      const el = commentRef.current;
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+  }, [commentText]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -290,11 +300,13 @@ export default function QuestionPage() {
         <div className="py-2 px-4 mb-4 bg-white rounded-lg border border-gray-200">
           <textarea
             id="comment"
-            rows="6"
+            rows="1"
             className="px-0 w-full text-sm text-gray-900 border-0 focus:ring-0 focus:outline-none"
             placeholder="Write a comment..."
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
+            ref={commentRef}
+            style={{ overflow: 'hidden' }}
             required
           />
         </div>
