@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @Service
 public class QuestionService {
@@ -32,6 +31,7 @@ public class QuestionService {
     }
 
     public List<QuestionDTO> getAllQuestions() {
+
         List<Question> questions = questionRepository.findAll();
         if (questions.isEmpty()) {
             return new ArrayList<>();
@@ -40,11 +40,7 @@ public class QuestionService {
     }
 
     public QuestionDTO getQuestionById(int id) {
-        Optional<Question> questionOpt = questionRepository.findById(id);
-        if (questionOpt.isEmpty()) {
-            throw new NoSuchElementException("Question not found with id " + id);
-        }
-        Question question = questionOpt.get();
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
         return new QuestionDTO(question.getId(), question.getTitle(), question.getContent(), question.getCreatedAt());
     }
 
