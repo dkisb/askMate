@@ -38,7 +38,7 @@ public class AnswerService {
     public List<AnswerDTO> getAnswers(int questionId) {
         questionRepository.findById(questionId).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + questionId));
         List<Answer> answers = answerRepository.getAllByQuestionId(questionId).orElseThrow(() -> new NoSuchElementException("Answers not found with questionId: " + questionId));
-        return answers.stream().map(a -> new AnswerDTO(a.getId(), a.getContent(), a.getCreatedAt())).toList();
+        return answers.stream().map(a -> new AnswerDTO(a.getId(), a.getContent(), a.getCreatedAt(), a.getAuthor().getUsername())).toList();
     }
 
     public void addNewAnswer(NewAnswerDTO answerDTO) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ThumbsUp, ThumbsDown, Share } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { fetchAllQuestions, createQuestion, addPoints, likeQuestion, dislikeQuestion, fetchQuestionLikesCount } from '../utils/api.js';
@@ -9,6 +9,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [questionTitle, setQuestionTitle] = useState('');
   const [questionContent, setQuestionContent] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const contentRef = useRef(null);
   const [userReactions, setUserReactions] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('askmate_home_q_react') || '{}');
@@ -21,9 +23,8 @@ export default function HomePage() {
 
   const location = useLocation();
   const fromState = location.state || {};
-  const authUser = []
-  const userName = fromState.userName || (authUser && authUser.userName);
-  const userId = fromState.userId || (authUser && authUser.userId);
+  const [currentUserName, setCurrentUserName] = useState(fromState.userName ?? null);
+  const [currentUserId, setCurrentUserId] = useState(fromState.userId ?? null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -55,14 +56,6 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  // Lightweight polling to keep counts in sync with backend
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      fetchData();
-    }, 5000);
-    return () => clearInterval(intervalId);
-  }, []);
-
   useEffect(() => {
     try {
       localStorage.setItem('askmate_home_q_react', JSON.stringify(userReactions));
@@ -71,9 +64,37 @@ export default function HomePage() {
     }
   }, [userReactions]);
 
+  // Auto-resize the question content textarea based on input length
+  useEffect(() => {
+    if (contentRef.current) {
+      const el = contentRef.current;
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    }
+  }, [questionContent, showForm]);
+
+  // Ensure user from JWT if not provided via navigation state
+  useEffect(() => {
+    if (currentUserId) return;
+    const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
+    if (!token) return;
+    (async () => {
+      try {
+        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!meRes.ok) return;
+        const me = await meRes.json();
+        setCurrentUserName(me.userName ?? me.username ?? null);
+        setCurrentUserId(me.userId ?? me.userid ?? me.id ?? null);
+      } catch {
+        // ignore
+      }
+    })();
+  }, [currentUserId]);
+
   async function awardQuestionPoints() {
     try {
-      await addPoints(userId, 5);
+      if (!currentUserId) return;
+      await addPoints(currentUserId, 5);
     } catch (error) {
       console.error('Error adding points:', error);
     }
@@ -84,13 +105,19 @@ export default function HomePage() {
     console.log('Title:', questionTitle);
     console.log('Content:', questionContent);
     try {
-      await createQuestion(questionTitle, questionContent, userId);
+      if (!currentUserId) {
+        alert('You are not logged in. Please log in again.');
+        return;
+      }
+      await createQuestion(questionTitle, questionContent, currentUserId);
       setQuestionTitle('');
       setQuestionContent('');
       fetchData();
       awardQuestionPoints();
+      setShowForm(false);
     } catch (error) {
       console.error('Error creating question:', error);
+      alert('Failed to create question. Please try again.');
     }
   };
 
@@ -112,7 +139,12 @@ export default function HomePage() {
           await dislikeQuestion(questionId);
           setUserReactions((prev) => ({ ...prev, [questionId]: 'dislike' }));
         }
-        await fetchData();
+        try {
+          const refreshed = await fetchQuestionLikesCount(questionId);
+          setLikesByQuestionId((prev) => ({ ...prev, [questionId]: Number(refreshed) || 0 }));
+        } catch {
+          // ignore
+        }
       } catch (err) {
         console.error('Failed to react to question:', err);
       } finally {
@@ -160,8 +192,18 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Questions</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Welcome to AskMate!</h1>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => setShowForm((v) => !v)}
+        >
+          {showForm ? 'Close' : 'Ask Question'}
+        </button>
+      </div>
 
+      {showForm && (
       <form className="mb-6" onSubmit={handleSubmit}>
         <div className="mb-4">
           <label htmlFor="question-title" className="block text-gray-700 text-sm font-bold mb-2">
@@ -183,11 +225,13 @@ export default function HomePage() {
           </label>
           <textarea
             id="question-content"
-            rows="6"
+            rows="1"
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             placeholder="Enter question content"
             value={questionContent}
             onChange={(e) => setQuestionContent(e.target.value)}
+            ref={contentRef}
+            style={{ overflow: 'hidden' }}
             required
           ></textarea>
         </div>
@@ -198,57 +242,56 @@ export default function HomePage() {
           Ask Question
         </button>
       </form>
+      )}
 
       {loading ? (
         <p>Loading...</p>
       ) : questions ? (
         sortedQuestions.map((question) => {
           return (
-            <div key={question.id} className="collapse collapse-arrow bg-base-100 border border-base-300 mb-2">
-              <input type="checkbox" name={`question-${question.id}`} />
-              <div className="collapse-title font-semibold">{question.title}</div>
-              <div className="collapse-content text-sm">
-                <div>{question.content}</div>
-                <div className="text-xs text-gray-500 mt-1" title={formatExactTime(question.created || question.createdAt)}>
-                  {formatRelativeTime(question.created || question.createdAt)}
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {(likesByQuestionId[question.id] ?? 0)} likes
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <button
-                    type="button"
-                    className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${userReactions[question.id] === 'like' ? 'text-blue-600' : ''}`}
-                    onClick={() => toggleQuestionReaction(question.id, 'like')}
-                    disabled={!!pending[question.id]}
-                    aria-pressed={userReactions[question.id] === 'like'}
-                    aria-label="Like question"
-                  >
-                    <ThumbsUp size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${userReactions[question.id] === 'dislike' ? 'text-red-600' : ''}`}
-                    onClick={() => toggleQuestionReaction(question.id, 'dislike')}
-                    disabled={!!pending[question.id]}
-                    aria-pressed={userReactions[question.id] === 'dislike'}
-                    aria-label="Dislike question"
-                  >
-                    <ThumbsDown size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-xs inline-flex items-center gap-1"
-                    onClick={() => handleShareQuestion(question.id)}
-                    aria-label="Share question"
-                  >
-                    <Share size={16} />
-                  </button>
-                </div>
-                <Link to={`/question/${question.id}`} state={{userName, userId, questionUserId: question.userId}} className="btn mt-2">
-                  See Comments
-                </Link>
+            <div key={question.id} className="p-4 mb-2 bg-base-100 border border-base-300 rounded-lg">
+              <h2 className="font-semibold">{question.title}</h2>
+              <div className="text-xs text-gray-600 mt-1">Posted by {question.author}</div>
+              <div className="text-sm mt-1">{question.content}</div>
+              <div className="text-xs text-gray-500 mt-1" title={formatExactTime(question.createdAt)}>
+                {formatRelativeTime(question.createdAt)}
               </div>
+              <div className="text-xs text-gray-600 mt-1">
+                {(likesByQuestionId[question.id] ?? 0)} likes
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${userReactions[question.id] === 'like' ? 'text-blue-600' : ''}`}
+                  onClick={() => toggleQuestionReaction(question.id, 'like')}
+                  disabled={!!pending[question.id]}
+                  aria-pressed={userReactions[question.id] === 'like'}
+                  aria-label="Like question"
+                >
+                  <ThumbsUp size={16} />
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${userReactions[question.id] === 'dislike' ? 'text-red-600' : ''}`}
+                  onClick={() => toggleQuestionReaction(question.id, 'dislike')}
+                  disabled={!!pending[question.id]}
+                  aria-pressed={userReactions[question.id] === 'dislike'}
+                  aria-label="Dislike question"
+                >
+                  <ThumbsDown size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs inline-flex items-center gap-1"
+                  onClick={() => handleShareQuestion(question.id)}
+                  aria-label="Share question"
+                >
+                  <Share size={16} />
+                </button>
+              </div>
+              <Link to={`/question/${question.id}`} state={{userName: currentUserName, userId: currentUserId, questionUserId: question.userId}} className="btn mt-2">
+                See Comments
+              </Link>
             </div>
           );
         })

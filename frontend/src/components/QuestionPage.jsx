@@ -10,7 +10,7 @@ export default function QuestionPage() {
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');  
   const { id } = useParams();
-  const [postReaction, setPostReaction] = useState(null); // 'like' | 'dislike' | null
+  const [postReaction, setPostReaction] = useState(null);
   const [commentReactions, setCommentReactions] = useState({});
   const [pending, setPending] = useState({ post: false, comments: {} });
   const [likeCounts, setLikeCounts] = useState({ question: 0, comments: {} });
@@ -239,18 +239,17 @@ export default function QuestionPage() {
       console.error('Share failed:', err);
     }
   }
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Question</h1>
+      <h1 className="text-2xl font-bold mb-6">Posted by {question?.author}</h1>
       {loading || !question ? (
         <p>Loading question...</p>
       ) : (
         <div className="mb-6">
           <h2 className="text-xl font-semibold">{question.title}</h2>
           <p className="text-gray-500">{question.content}</p>
-          <small className="text-gray-600" title={formatExactTime(question.created || question.createdAt)}>
-             {formatRelativeTime(question.created || question.createdAt)}
+          <small className="text-gray-600" title={formatExactTime(question.createdAt)}>
+             {formatRelativeTime(question.createdAt)}
           </small>
           <div className="text-xs text-gray-600 mt-1">
             {likeCounts.question} likes
@@ -311,7 +310,8 @@ export default function QuestionPage() {
       {sortedComments.length > 0 ? (
         sortedComments.map((comment) => (
           <div key={comment.id ?? Math.random()} className="p-6 mb-3 bg-white rounded-lg border-t border-gray-200">
-            <p className="text-lg font-bold mb-4">{comment.content}</p>
+            <p className="text-lg font-bold mb-1">{comment.content}</p>
+            <div className="text-xs text-gray-700 mb-2">By {comment.author}</div>
             <small className="text-gray-600" title={formatExactTime(comment.created || comment.createdAt)}>
               {formatRelativeTime(comment.created || comment.createdAt)}
             </small>

@@ -36,7 +36,7 @@ public class QuestionService {
         if (questions.isEmpty()) {
             return new ArrayList<>();
         }
-        return questions.stream().map(q -> new QuestionDTO(q.getId(), q.getTitle(), q.getContent(), q.getCreatedAt())).toList();
+        return questions.stream().map(q -> new QuestionDTO(q.getId(), q.getTitle(), q.getContent(), q.getCreatedAt(), q.getAuthor().getUsername())).toList();
     }
 
     public QuestionDTO getQuestionById(int id) {
@@ -45,7 +45,7 @@ public class QuestionService {
             throw new NoSuchElementException("Question not found with id " + id);
         }
         Question question = questionOpt.get();
-        return new QuestionDTO(question.getId(), question.getTitle(), question.getContent(), question.getCreatedAt());
+        return new QuestionDTO(question.getId(), question.getTitle(), question.getContent(),question.getCreatedAt(),question.getAuthor().getUsername());
     }
 
     public void deleteQuestionById(int id) {

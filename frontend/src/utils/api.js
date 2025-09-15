@@ -16,7 +16,28 @@ export const fetchComments = async (id) => {
       throw new Error(`Failed to fetch comments: ${response.status}`);
     }
     const data = await response.json();
-    return data;
+    const list = Array.isArray(data) ? data : [];
+    return list.map((c) => {
+      const authorRaw = c && (c.author ?? c.user ?? c.userDto);
+      let userId = null;
+      let userName = null;
+      if (authorRaw && typeof authorRaw === 'object') {
+        userId = authorRaw.id ?? authorRaw.userId ?? null;
+        userName = authorRaw.userName ?? authorRaw.username ?? null;
+      } else if (typeof authorRaw === 'string') {
+        userName = authorRaw;
+      } else {
+        userId = c.userId ?? null;
+        userName = c.userName ?? c.username ?? null;
+      }
+      return {
+        ...c,
+        userId,
+        userName,
+        createdAt: c.createdAt ?? c.created ?? null,
+        created: c.created ?? c.createdAt ?? null,
+      };
+    });
   } catch (error) {
     console.error('Error fetching comments:', error);
     throw error;
@@ -34,7 +55,20 @@ export const fetchQuestion = async (id) => {
       throw new Error(`Failed to fetch question: ${response.status}`);
     }
     const data = await response.json();
-    return data;
+    const author = data && data.author !== undefined ? data.author : {};
+    const userId = typeof author === 'object' && author !== null
+      ? (author.id ?? author.userId ?? null)
+      : (data.userId ?? null);
+    const userName = typeof author === 'object' && author !== null
+      ? (author.userName ?? author.username ?? null)
+      : (typeof author === 'string' ? author : (data.userName ?? data.username ?? null));
+    return {
+      ...data,
+      userId,
+      userName,
+      createdAt: data.createdAt ?? data.created ?? null,
+      created: data.created ?? data.createdAt ?? null,
+    };
   } catch (error) {
     console.error('Error fetching question:', error);
     throw error;
@@ -97,7 +131,26 @@ export const fetchAllQuestions = async () => {
     if (!response.ok) {
       throw new Error(`Failed to fetch questions: ${response.status}`);
     }
-    return await response.json();
+    const list = await response.json();
+    const normalized = Array.isArray(list)
+      ? list.map((q) => {
+          const author = q && q.author !== undefined ? q.author : {};
+          const userId = typeof author === 'object' && author !== null
+            ? (author.id ?? author.userId ?? null)
+            : (q.userId ?? null);
+          const userName = typeof author === 'object' && author !== null
+            ? (author.userName ?? author.username ?? null)
+            : (typeof author === 'string' ? author : (q.userName ?? q.username ?? null));
+          return {
+            ...q,
+            userId,
+            userName,
+            createdAt: q.createdAt ?? q.created ?? null,
+            created: q.created ?? q.createdAt ?? null,
+          };
+        })
+      : [];
+    return normalized;
   } catch (error) {
     console.error('Error fetching all questions:', error);
     throw error;
