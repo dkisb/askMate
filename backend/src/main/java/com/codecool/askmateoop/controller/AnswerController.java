@@ -23,9 +23,19 @@ public class AnswerController {
         return answerService.getAnswers(id);
     }
 
+    @GetMapping("/a/{id}")
+    public AnswerDTO getAnswerById(@PathVariable("id") int id) {
+        return answerService.getAnswer(id);
+    }
+
     @PostMapping("/")
     public void addNewAnswer(@RequestBody NewAnswerDTO newAnswerDTO) {
         answerService.addNewAnswer(newAnswerDTO);
+    }
+
+    @PostMapping("/a/{parent_id}")
+    public void addNewComment(@PathVariable("parent_id") int id, @RequestBody NewAnswerDTO newAnswerDTO) {
+        answerService.addNewComment(id, newAnswerDTO);
     }
 
     @PatchMapping("/")

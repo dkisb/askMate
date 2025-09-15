@@ -90,7 +90,6 @@ public class UserServiceTest {
     @Test
     void loginUserWithValidCredentialsThenReturnJwtToken() {
         LoginRequestDTO loginRequest = new LoginRequestDTO("testuser", "password");
-
         User userDetails = new User(
                 "testuser",
                 "password",
@@ -194,7 +193,7 @@ public class UserServiceTest {
         UserEntity userEntity = new UserEntity();
         userEntity.setId(1);
         userEntity.setUsername("testUser");
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(userEntity));
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(userEntity));
 
         userService.deleteUser(1);
 
