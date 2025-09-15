@@ -123,3 +123,77 @@ export const createQuestion = async (title, content, userId) => {
     throw error;
   }
 };
+
+// Like/Dislike APIs (backend-only increments)
+export async function likeQuestion(questionId) {
+  const response = await fetch(`/api/question/like/${questionId}`, {
+    method: 'PATCH',
+    headers: {
+      ...getAuthHeader(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to like question: ${response.status}`);
+  }
+  return true;
+}
+
+// Like count fetchers
+export async function fetchQuestionLikesCount(questionId) {
+  const response = await fetch(`/api/question/like/${questionId}`, {
+    headers: { ...getAuthHeader() },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch question likes: ${response.status}`);
+  }
+  return await response.json();
+}
+
+export async function fetchAnswerLikesCount(answerId) {
+  const response = await fetch(`/api/answer/like/${answerId}`, {
+    headers: { ...getAuthHeader() },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch answer likes: ${response.status}`);
+  }
+  return await response.json();
+}
+
+export async function dislikeQuestion(questionId) {
+  const response = await fetch(`/api/question/dislike/${questionId}`, {
+    method: 'PATCH',
+    headers: {
+      ...getAuthHeader(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to dislike question: ${response.status}`);
+  }
+  return true;
+}
+
+export async function likeAnswer(answerId) {
+  const response = await fetch(`/api/answer/like/${answerId}`, {
+    method: 'PATCH',
+    headers: {
+      ...getAuthHeader(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to like answer: ${response.status}`);
+  }
+  return true;
+}
+
+export async function dislikeAnswer(answerId) {
+  const response = await fetch(`/api/answer/dislike/${answerId}`, {
+    method: 'PATCH',
+    headers: {
+      ...getAuthHeader(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to dislike answer: ${response.status}`);
+  }
+  return true;
+}

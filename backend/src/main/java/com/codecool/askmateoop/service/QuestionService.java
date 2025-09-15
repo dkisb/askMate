@@ -89,9 +89,31 @@ public class QuestionService {
         question.setContent(questionDTO.content());
         questionRepository.save(question);
     }
+    public void likeQuestion(int id) {
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
+        question.setLikes(question.getLikes() + 1);
+        questionRepository.save(question);
+    }
+    public int getLikes(int id){
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
+        return question.getLikes();
+    }
+
+    public void dislikeQuestion(int id){
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
+        question.setDislikes(question.getDislikes() + 1);
+        questionRepository.save(question);
+    }
+
+    public int getDislikes(int id){
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
+        return question.getDislikes();
+    }
 
     public void deleteAnyQuestionById(int id) {
         Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
         questionRepository.delete(question);
     }
+
+
 }

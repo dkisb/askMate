@@ -43,11 +43,13 @@ public class AnswerService {
 
     public void addNewAnswer(NewAnswerDTO answerDTO) {
         Question question = questionRepository.findById(answerDTO.questionId()).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + answerDTO.questionId()));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         Answer answer = new Answer();
         answer.setContent(answerDTO.content());
         answer.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
         answer.setQuestion(question);
-        answer.setAuthor(question.getAuthor());
+        answer.setAuthor(currentUser);
         answerRepository.save(answer);
     }
 
@@ -60,6 +62,28 @@ public class AnswerService {
         }
         answer.setContent(answerDTO.content());
         answerRepository.save(answer);
+    }
+
+    public void likeAnswer(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        answer.setLikes(answer.getLikes() + 1);
+        answerRepository.save(answer);
+    }
+
+    public int getLikes(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        return answer.getLikes();
+    }
+
+    public void dislikeAnswer(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        answer.setDislikes(answer.getDislikes() + 1);
+        answerRepository.save(answer);
+    }
+
+    public int getDislikes(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        return answer.getDislikes();
     }
 
     public void deleteAnswer(int id){
