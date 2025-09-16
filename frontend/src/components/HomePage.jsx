@@ -1,13 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowBigUp, ArrowBigDown, Share } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import TopicsList from './TopicsList.jsx';
+import PostList from './PostList.jsx';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
 import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -16,9 +12,7 @@ import SpeedDial from '@mui/material/SpeedDial';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
 import AddIcon from '@mui/icons-material/Add';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import { fetchAllQuestions, createQuestion, addPoints, likeQuestion, dislikeQuestion, fetchQuestionLikesCount, fetchComments } from '../utils/api.js';
-import { formatRelativeTime } from '../utils/transformDate.jsx';
 
 export default function HomePage() {
   const [questions, setQuestions] = useState([]);
@@ -215,7 +209,7 @@ export default function HomePage() {
         textarea.value = url;
         document.body.appendChild(textarea);
         textarea.select();
-        document.execCommand('copy');
+        document.copy();
         document.body.removeChild(textarea);
         alert('Link copied to clipboard');
       }
@@ -283,83 +277,32 @@ export default function HomePage() {
         </form>
       </Dialog>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : questions ? (
-        sortedQuestions.map((question) => {
-          const commentsCount = commentsCountByQuestionId[question.id] ?? 0;
-          const likeCount = likesByQuestionId[question.id] ?? 0;
-          return (
-            <Box key={question.id} sx={{ mb: 2, maxWidth: 720, mr: 'auto' }}>
-              <Card variant="outlined">
-                <Box sx={{ display: 'flex' }}>
-                  <Box sx={{ flex: 1, p: 2 }}>
-                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                      {question.title}
-                    </Typography>
-                    <Typography sx={{ color: 'text.secondary', mb: 1 }}>
-                      Posted by {question.author} {formatRelativeTime(question.createdAt)}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {question.content}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5 }}>
-                      <IconButton aria-label="Share question" onClick={() => handleShareQuestion(question.id)}>
-                        <Share size={18} />
-                      </IconButton>
-                      <Box
-                        component={Link}
-                        to={`/question/${question.id}`}
-                        state={{ userName: currentUserName, userId: currentUserId, questionUserId: question.userId }}
-                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'inherit', textDecoration: 'none' }}
-                      >
-                        <Typography variant="caption">{commentsCount} comments</Typography>
-                        <ChatBubbleOutlineIcon fontSize="small" />
-                      </Box>
-                    </Box>
-                  </Box>
-                  <Box sx={{ width: 72, borderLeft: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5, p: 1 }}>
-                    <IconButton
-                      aria-label="Like question"
-                      onClick={() => toggleQuestionReaction(question.id, 'like')}
-                      disabled={!!pending[question.id]}
-                      sx={{ color: userReactions[question.id] === 'like' ? 'primary.main' : 'inherit' }}
-                    >
-                      <ArrowBigUp size={28} />
-                    </IconButton>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{likeCount}</Typography>
-                    <IconButton
-                      aria-label="Dislike question"
-                      onClick={() => toggleQuestionReaction(question.id, 'dislike')}
-                      disabled={!!pending[question.id]}
-                      sx={{ color: userReactions[question.id] === 'dislike' ? 'error.main' : 'inherit' }}
-                    >
-                      <ArrowBigDown size={28} />
-                    </IconButton>
-                  </Box>
-                </Box>
-              </Card>
-            </Box>
-          );
-        })
-      ) : (
-        <p>No questions found</p>
-      )}
+      <Box sx={{ display: { xs: 'block', md: 'flex' }, gap: 2 }}>
+        <Box sx={{ flex: '0 0 720px' }}>
+          <PostList
+            loading={loading}
+            questions={sortedQuestions}
+            likesByQuestionId={likesByQuestionId}
+            commentsCountByQuestionId={commentsCountByQuestionId}
+            userReactions={userReactions}
+            pending={pending}
+            onToggleReaction={toggleQuestionReaction}
+            onShareQuestion={handleShareQuestion}
+            currentUserName={currentUserName}
+            currentUserId={currentUserId}
+          />
+        </Box>
+        <Box sx={{ flex: '0 0 360px', alignSelf: 'normal', position: 'relative', top: 88, left: 120 }}>
+          <TopicsList />
+        </Box>
+      </Box>
 
-      <Box sx={{ position: 'fixed', bottom: 16, right: 16 }}>
+      <Box sx={{ position: 'fixed', bottom: 16, left: 16 }}>
         <SpeedDial ariaLabel="actions" icon={<SpeedDialIcon />} direction="up">
           <SpeedDialAction
             key="new"
             icon={<AddIcon />}
-            tooltipTitle="New Post"
+            title="New Post"
             onClick={() => setShowForm(true)}
           />
         </SpeedDial>

@@ -58,7 +58,7 @@ export default function PrimarySearchAppBar() {
   const [searchText, setSearchText] = React.useState('');
   const [anchorEl, setAnchorEl] = React.useState(null);
   const navigate = useNavigate();
-  const { user, logout } = useUser();
+  const { user, setUser, logout } = useUser();
 
   const isMenuOpen = Boolean(anchorEl);
 
@@ -100,6 +100,28 @@ export default function PrimarySearchAppBar() {
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
+
+  // Hydrate user from JWT if missing
+  React.useEffect(() => {
+    if (user && (user.userName || user.username)) return;
+    const token = (() => {
+      try { return localStorage.getItem('jwtToken'); } catch { return null; }
+    })();
+    if (!token) return;
+    (async () => {
+      try {
+        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        if (!meRes.ok) return;
+        const me = await meRes.json();
+        const normalizedUserName = me.userName ?? me.username ?? null;
+        const normalizedUserId = me.userId ?? me.userid ?? me.id ?? null;
+        const email = me.email ?? null;
+        setUser && setUser({ userName: normalizedUserName, userId: normalizedUserId, email });
+      } catch {
+        // ignore hydration errors
+      }
+    })();
+  }, [user, setUser]);
 
   return (
     <Box sx={{ flexGrow: 1 }}>
