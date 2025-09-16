@@ -1,6 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { ThumbsUp, ThumbsDown, Share } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardActions from '@mui/material/CardActions';
+import CardContent from '@mui/material/CardContent';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import SpeedDial from '@mui/material/SpeedDial';
+import SpeedDialIcon from '@mui/material/SpeedDialIcon';
+import SpeedDialAction from '@mui/material/SpeedDialAction';
+import AddIcon from '@mui/icons-material/Add';
 import { fetchAllQuestions, createQuestion, addPoints, likeQuestion, dislikeQuestion, fetchQuestionLikesCount } from '../utils/api.js';
 import { formatRelativeTime, formatExactTime } from '../utils/transformDate.jsx';
 
@@ -121,7 +136,11 @@ export default function HomePage() {
     }
   };
 
-  const sortedQuestions = [...questions].sort(
+  const query = new URLSearchParams(location.search).get('q') || '';
+  const filteredQuestions = query
+    ? questions.filter((q) => (q.title || '').toLowerCase().includes(query.toLowerCase()))
+    : questions;
+  const sortedQuestions = [...filteredQuestions].sort(
     (a, b) => new Date(b.created || b.createdAt) - new Date(a.created || a.createdAt)
   );
 
@@ -190,114 +209,137 @@ export default function HomePage() {
     }
   }
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setShowForm(params.get('new') === '1');
+  }, [location.search]);
+
+  const closeForm = () => {
+    const params = new URLSearchParams(location.search);
+    if (params.has('new')) {
+      params.delete('new');
+      const next = `${location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState(null, '', next);
+    }
+    setShowForm(false);
+  };
+
   return (
     <div className="container mx-auto p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Welcome to AskMate!</h1>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => setShowForm((v) => !v)}
-        >
-          {showForm ? 'Close' : 'Ask Question'}
-        </button>
-      </div>
-
-      {showForm && (
-      <form className="mb-6" onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label htmlFor="question-title" className="block text-gray-700 text-sm font-bold mb-2">
-            Question Title:
-          </label>
-          <input
-            type="text"
-            id="question-title"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter question title"
-            value={questionTitle}
-            onChange={(e) => setQuestionTitle(e.target.value)}
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="question-content" className="block text-gray-700 text-sm font-bold mb-2">
-            Question Content:
-          </label>
-          <textarea
-            id="question-content"
-            rows="1"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter question content"
-            value={questionContent}
-            onChange={(e) => setQuestionContent(e.target.value)}
-            ref={contentRef}
-            style={{ overflow: 'hidden' }}
-            required
-          ></textarea>
-        </div>
-        <button
-          type="submit"
-          className="inline-flex items-center py-2.5 px-4 text-xs font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800"
-        >
-          Ask Question
-        </button>
-      </form>
-      )}
+      <Dialog open={showForm} onClose={closeForm} fullWidth maxWidth="sm">
+        <DialogTitle>Post a new question</DialogTitle>
+        <form onSubmit={handleSubmit}>
+          <DialogContent dividers>
+            <div className="mb-4">
+              <label htmlFor="question-title" className="block text-gray-700 text-sm font-bold mb-2">
+                Question Title:
+              </label>
+              <input
+                type="text"
+                id="question-title"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Enter question title"
+                value={questionTitle}
+                onChange={(e) => setQuestionTitle(e.target.value)}
+                required
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="question-content" className="block text-gray-700 text-sm font-bold mb-2">
+                Question Content:
+              </label>
+              <textarea
+                id="question-content"
+                rows="3"
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Enter question content"
+                value={questionContent}
+                onChange={(e) => setQuestionContent(e.target.value)}
+                ref={contentRef}
+                style={{ overflow: 'hidden' }}
+                required
+              ></textarea>
+            </div>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeForm}>Cancel</Button>
+            <Button type="submit" variant="contained">Post</Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
       {loading ? (
         <p>Loading...</p>
       ) : questions ? (
         sortedQuestions.map((question) => {
           return (
-            <div key={question.id} className="p-4 mb-2 bg-base-100 border border-base-300 rounded-lg">
-              <h2 className="font-semibold">{question.title}</h2>
-              <div className="text-xs text-gray-600 mt-1">Posted by {question.author}</div>
-              <div className="text-sm mt-1">{question.content}</div>
-              <div className="text-xs text-gray-500 mt-1" title={formatExactTime(question.createdAt)}>
-                {formatRelativeTime(question.createdAt)}
-              </div>
-              <div className="text-xs text-gray-600 mt-1">
-                {(likesByQuestionId[question.id] ?? 0)} likes
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <button
-                  type="button"
-                  className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${userReactions[question.id] === 'like' ? 'text-blue-600' : ''}`}
-                  onClick={() => toggleQuestionReaction(question.id, 'like')}
-                  disabled={!!pending[question.id]}
-                  aria-pressed={userReactions[question.id] === 'like'}
-                  aria-label="Like question"
-                >
-                  <ThumbsUp size={16} />
-                </button>
-                <button
-                  type="button"
-                  className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${userReactions[question.id] === 'dislike' ? 'text-red-600' : ''}`}
-                  onClick={() => toggleQuestionReaction(question.id, 'dislike')}
-                  disabled={!!pending[question.id]}
-                  aria-pressed={userReactions[question.id] === 'dislike'}
-                  aria-label="Dislike question"
-                >
-                  <ThumbsDown size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-xs inline-flex items-center gap-1"
-                  onClick={() => handleShareQuestion(question.id)}
-                  aria-label="Share question"
-                >
-                  <Share size={16} />
-                </button>
-              </div>
-              <Link to={`/question/${question.id}`} state={{userName: currentUserName, userId: currentUserId, questionUserId: question.userId}} className="btn mt-2">
-                See Comments
-              </Link>
-            </div>
+            <Box key={question.id} sx={{ mb: 2, maxWidth: 720, mr: 'auto' }}>
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5 }}>
+                  <Typography gutterBottom sx={{ color: 'text.secondary', fontSize: 14 }}>
+                    Posted by {question.author}
+                  </Typography>
+                  <Typography variant="h6" component="div">
+                    {question.title}
+                  </Typography>
+                  <Typography sx={{ color: 'text.secondary', mb: 1.5 }} title={formatExactTime(question.createdAt)}>
+                    {formatRelativeTime(question.createdAt)}
+                  </Typography>
+                  <Typography variant="body2">
+                    {question.content}
+                  </Typography>
+                  <Typography sx={{ color: 'text.secondary', mt: 1 }} variant="caption">
+                    {(likesByQuestionId[question.id] ?? 0)} likes
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <IconButton
+                    aria-label="Like question"
+                    onClick={() => toggleQuestionReaction(question.id, 'like')}
+                    disabled={!!pending[question.id]}
+                    sx={{ color: userReactions[question.id] === 'like' ? 'primary.main' : 'inherit' }}
+                  >
+                    <ThumbsUp size={18} />
+                  </IconButton>
+                  <IconButton
+                    aria-label="Dislike question"
+                    onClick={() => toggleQuestionReaction(question.id, 'dislike')}
+                    disabled={!!pending[question.id]}
+                    sx={{ color: userReactions[question.id] === 'dislike' ? 'error.main' : 'inherit' }}
+                  >
+                    <ThumbsDown size={18} />
+                  </IconButton>
+                  <IconButton aria-label="Share question" onClick={() => handleShareQuestion(question.id)}>
+                    <Share size={18} />
+                  </IconButton>
+                  <Box sx={{ flexGrow: 1 }} />
+                  <Button
+                    size="small"
+                    component={Link}
+                    to={`/question/${question.id}`}
+                    state={{ userName: currentUserName, userId: currentUserId, questionUserId: question.userId }}
+                  >
+                    See Comments
+                  </Button>
+                </CardActions>
+              </Card>
+            </Box>
           );
         })
       ) : (
         <p>No questions found</p>
       )}
+
+      <Box sx={{ position: 'fixed', bottom: 16, right: 16 }}>
+        <SpeedDial ariaLabel="actions" icon={<SpeedDialIcon />} direction="up">
+          <SpeedDialAction
+            key="new"
+            icon={<AddIcon />}
+            tooltipTitle="New Post"
+            onClick={() => setShowForm(true)}
+          />
+        </SpeedDial>
+      </Box>
     </div>
   );
 }
