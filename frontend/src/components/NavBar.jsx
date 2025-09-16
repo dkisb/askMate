@@ -1,21 +1,16 @@
 import * as React from 'react';
 import { styled, alpha } from '@mui/material/styles';
+import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
+import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
 import IconButton from '@mui/material/IconButton';
+import Button from '@mui/material/Button';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import SearchIcon from '@mui/icons-material/Search';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import LogoutIcon from '@mui/icons-material/Logout';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext.jsx';
 
@@ -59,12 +54,13 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-export default function PrimarySearchAppBar({ open = true, onToggle }) {
+export default function PrimarySearchAppBar() {
   const [searchText, setSearchText] = React.useState('');
+  const [anchorEl, setAnchorEl] = React.useState(null);
   const navigate = useNavigate();
-  const { logout } = useUser();
-  const drawerWidth = 280;
-  const miniWidth = 72;
+  const { user, logout } = useUser();
+
+  const isMenuOpen = Boolean(anchorEl);
 
   const handleSearchKeyDown = (event) => {
     if (event.key === 'Enter') {
@@ -83,6 +79,7 @@ export default function PrimarySearchAppBar({ open = true, onToggle }) {
   };
 
   const handleGoToProfile = () => {
+    handleMenuClose();
     navigate('/profile');
   };
 
@@ -93,45 +90,37 @@ export default function PrimarySearchAppBar({ open = true, onToggle }) {
       // ignore storage errors
     }
     logout && logout();
+    handleMenuClose();
     navigate('/', { replace: true });
   };
-  const effectiveWidth = open ? drawerWidth : miniWidth;
+
+  const handleProfileMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   return (
-    <Box sx={{ width: effectiveWidth, flexShrink: 0 }}>
-      <Drawer
-        variant="permanent"
-        anchor="left"
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: effectiveWidth,
-            transition: 'width 200ms ease',
-            overflowX: 'hidden',
-            boxSizing: 'border-box',
-            bgcolor: '#1e3a8a',
-            color: 'white',
-          },
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1, justifyContent: open ? 'flex-start' : 'center' }}>
-            <IconButton aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'} onClick={onToggle} sx={{ color: 'inherit' }}>
-              {open ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-            </IconButton>
-            {open && (
-              <Typography
-                variant="h6"
-                noWrap
-                component={Link}
-                to="/home"
-                sx={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
-              >
-                AskMate
-              </Typography>
-            )}
-          </Box>
-          {open ? (
-            <Box sx={{ px: 2 }}>
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static" sx={{ bgcolor: '#1e3a8a' }}>
+        <Toolbar>
+          <Typography
+            variant="h6"
+            noWrap
+            component={Link}
+            to="/home"
+            sx={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer', mr: 2 }}
+          >
+            AskMate
+          </Typography>
+
+          <Button color="inherit" component={Link} to="/profile" sx={{ mr: 2 }}>
+            My Questions
+          </Button>
+
+          <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center' }}>
+            <Box sx={{ maxWidth: 600, flex: 1 }}>
               <Search>
                 <SearchIconWrapper>
                   <SearchIcon />
@@ -145,36 +134,39 @@ export default function PrimarySearchAppBar({ open = true, onToggle }) {
                 />
               </Search>
             </Box>
-          ) : (
-            <Box sx={{ display: 'flex', justifyContent: 'center', px: 1 }}>
-              <IconButton aria-label="Search" sx={{ color: 'inherit' }} onClick={onToggle}>
-                <SearchIcon />
-              </IconButton>
-            </Box>
-          )}
-          <Box sx={{ flexGrow: 1 }} />
-          
-          <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
-          <List>
-            <ListItem disablePadding>
-              <ListItemButton onClick={handleGoToProfile} sx={{ justifyContent: open ? 'initial' : 'center' }}>
-                <ListItemIcon sx={{ color: 'inherit', minWidth: open ? 56 : 'auto' }}>
-                  <AccountCircle />
-                </ListItemIcon>
-                {open && <ListItemText primary="Profile" />}
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton onClick={handleLogout} sx={{ justifyContent: open ? 'initial' : 'center' }}>
-                <ListItemIcon sx={{ color: 'inherit', minWidth: open ? 56 : 'auto' }}>
-                  <LogoutIcon />
-                </ListItemIcon>
-                {open && <ListItemText primary="Logout" />}
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Box>
-      </Drawer>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography
+              variant="h6"
+              sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 600 }}
+            >
+              Welcome back{user?.userName ? `, ${user.userName}` : ''}
+            </Typography>
+            <IconButton
+              size="large"
+              edge="end"
+              aria-label="account of current user"
+              aria-haspopup="true"
+              onClick={handleProfileMenuOpen}
+              color="inherit"
+            >
+              <AccountCircle fontSize="large" />
+            </IconButton>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      <Menu
+        anchorEl={anchorEl}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={isMenuOpen}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleGoToProfile}>Profile</MenuItem>
+        <MenuItem onClick={handleLogout}>Logout</MenuItem>
+      </Menu>
     </Box>
   );
 }

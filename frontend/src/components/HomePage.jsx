@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ThumbsUp, ThumbsDown, Share } from 'lucide-react';
+import { ArrowBigUp, ArrowBigDown, Share } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -16,8 +16,9 @@ import SpeedDial from '@mui/material/SpeedDial';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
 import AddIcon from '@mui/icons-material/Add';
-import { fetchAllQuestions, createQuestion, addPoints, likeQuestion, dislikeQuestion, fetchQuestionLikesCount } from '../utils/api.js';
-import { formatRelativeTime, formatExactTime } from '../utils/transformDate.jsx';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import { fetchAllQuestions, createQuestion, addPoints, likeQuestion, dislikeQuestion, fetchQuestionLikesCount, fetchComments } from '../utils/api.js';
+import { formatRelativeTime } from '../utils/transformDate.jsx';
 
 export default function HomePage() {
   const [questions, setQuestions] = useState([]);
@@ -35,6 +36,7 @@ export default function HomePage() {
   });
   const [pending, setPending] = useState({});
   const [likesByQuestionId, setLikesByQuestionId] = useState({});
+  const [commentsCountByQuestionId, setCommentsCountByQuestionId] = useState({});
 
   const location = useLocation();
   const fromState = location.state || {};
@@ -60,6 +62,19 @@ export default function HomePage() {
       );
       const map = Object.fromEntries(entries);
       setLikesByQuestionId(map);
+
+      // Fetch comments count for all questions
+      const commentEntries = await Promise.all(
+        list.map(async (q) => {
+          try {
+            const answers = await fetchComments(q.id);
+            return [q.id, Array.isArray(answers) ? answers.length : 0];
+          } catch {
+            return [q.id, 0];
+          }
+        })
+      );
+      setCommentsCountByQuestionId(Object.fromEntries(commentEntries));
     } catch (error) {
       console.error('Error fetching questions:', error);
     } finally {
@@ -272,56 +287,65 @@ export default function HomePage() {
         <p>Loading...</p>
       ) : questions ? (
         sortedQuestions.map((question) => {
+          const commentsCount = commentsCountByQuestionId[question.id] ?? 0;
+          const likeCount = likesByQuestionId[question.id] ?? 0;
           return (
             <Box key={question.id} sx={{ mb: 2, maxWidth: 720, mr: 'auto' }}>
               <Card variant="outlined">
-                <CardContent sx={{ py: 1.5 }}>
-                  <Typography gutterBottom sx={{ color: 'text.secondary', fontSize: 14 }}>
-                    Posted by {question.author}
-                  </Typography>
-                  <Typography variant="h6" component="div">
-                    {question.title}
-                  </Typography>
-                  <Typography sx={{ color: 'text.secondary', mb: 1.5 }} title={formatExactTime(question.createdAt)}>
-                    {formatRelativeTime(question.createdAt)}
-                  </Typography>
-                  <Typography variant="body2">
-                    {question.content}
-                  </Typography>
-                  <Typography sx={{ color: 'text.secondary', mt: 1 }} variant="caption">
-                    {(likesByQuestionId[question.id] ?? 0)} likes
-                  </Typography>
-                </CardContent>
-                <CardActions>
-                  <IconButton
-                    aria-label="Like question"
-                    onClick={() => toggleQuestionReaction(question.id, 'like')}
-                    disabled={!!pending[question.id]}
-                    sx={{ color: userReactions[question.id] === 'like' ? 'primary.main' : 'inherit' }}
-                  >
-                    <ThumbsUp size={18} />
-                  </IconButton>
-                  <IconButton
-                    aria-label="Dislike question"
-                    onClick={() => toggleQuestionReaction(question.id, 'dislike')}
-                    disabled={!!pending[question.id]}
-                    sx={{ color: userReactions[question.id] === 'dislike' ? 'error.main' : 'inherit' }}
-                  >
-                    <ThumbsDown size={18} />
-                  </IconButton>
-                  <IconButton aria-label="Share question" onClick={() => handleShareQuestion(question.id)}>
-                    <Share size={18} />
-                  </IconButton>
-                  <Box sx={{ flexGrow: 1 }} />
-                  <Button
-                    size="small"
-                    component={Link}
-                    to={`/question/${question.id}`}
-                    state={{ userName: currentUserName, userId: currentUserId, questionUserId: question.userId }}
-                  >
-                    See Comments
-                  </Button>
-                </CardActions>
+                <Box sx={{ display: 'flex' }}>
+                  <Box sx={{ flex: 1, p: 2 }}>
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                      {question.title}
+                    </Typography>
+                    <Typography sx={{ color: 'text.secondary', mb: 1 }}>
+                      Posted by {question.author} {formatRelativeTime(question.createdAt)}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {question.content}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5 }}>
+                      <IconButton aria-label="Share question" onClick={() => handleShareQuestion(question.id)}>
+                        <Share size={18} />
+                      </IconButton>
+                      <Box
+                        component={Link}
+                        to={`/question/${question.id}`}
+                        state={{ userName: currentUserName, userId: currentUserId, questionUserId: question.userId }}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'inherit', textDecoration: 'none' }}
+                      >
+                        <Typography variant="caption">{commentsCount} comments</Typography>
+                        <ChatBubbleOutlineIcon fontSize="small" />
+                      </Box>
+                    </Box>
+                  </Box>
+                  <Box sx={{ width: 72, borderLeft: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5, p: 1 }}>
+                    <IconButton
+                      aria-label="Like question"
+                      onClick={() => toggleQuestionReaction(question.id, 'like')}
+                      disabled={!!pending[question.id]}
+                      sx={{ color: userReactions[question.id] === 'like' ? 'primary.main' : 'inherit' }}
+                    >
+                      <ArrowBigUp size={28} />
+                    </IconButton>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{likeCount}</Typography>
+                    <IconButton
+                      aria-label="Dislike question"
+                      onClick={() => toggleQuestionReaction(question.id, 'dislike')}
+                      disabled={!!pending[question.id]}
+                      sx={{ color: userReactions[question.id] === 'dislike' ? 'error.main' : 'inherit' }}
+                    >
+                      <ArrowBigDown size={28} />
+                    </IconButton>
+                  </Box>
+                </Box>
               </Card>
             </Box>
           );
