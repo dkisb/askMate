@@ -34,7 +34,7 @@ public class AnswerController {
         answerService.addNewAnswer(newAnswerDTO);
     }
 
-    @PostMapping("/a/{parent_id}")
+    @PostMapping("/a/{parent_id}")  // unnecessary parent_id: NewReplyDTO includes it
     public void addNewComment(@PathVariable("parent_id") int id, @RequestBody NewReplyDTO newReplyDTO) {
         answerService.addCommentOfComment(id, newReplyDTO);
     }
