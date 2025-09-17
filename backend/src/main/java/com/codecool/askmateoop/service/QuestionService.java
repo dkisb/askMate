@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @Service
 public class QuestionService {
@@ -32,6 +31,7 @@ public class QuestionService {
     }
 
     public List<QuestionDTO> getAllQuestions() {
+
         List<Question> questions = questionRepository.findAll();
         if (questions.isEmpty()) {
             return new ArrayList<>();
@@ -76,7 +76,7 @@ public class QuestionService {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         if (question.getAuthor().getId() != currentUser.getId()) {
-            throw new NotAllowedOperationException("You can only edit your onw question");
+            throw new NotAllowedOperationException("You can only edit your own question");
         }
         question.setTitle(questionDTO.title());
         question.setContent(questionDTO.content());

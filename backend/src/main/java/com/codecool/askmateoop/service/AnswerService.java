@@ -19,7 +19,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @Service
 public class AnswerService {
@@ -105,5 +104,22 @@ public class AnswerService {
     public void deleteAnyAnswer(int id) {
         answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
         answerRepository.deleteById(id);
+    }
+
+    public AnswerDTO getAnswer(int id) {
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        return new AnswerDTO(answer.getId(), answer.getContent(), answer.getCreatedAt());
+    }
+
+    public void addCommentOfComment(int id, NewAnswerDTO answerDTO) {
+        Question question = questionRepository.findById(answerDTO.questionId()).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + answerDTO.questionId()));
+        Answer parentAnswer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + answerDTO.questionId()));
+        Answer answer = new Answer();
+        answer.setContent(answerDTO.content());
+        answer.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
+        answer.setQuestion(question);
+        answer.setAuthor(question.getAuthor());
+        answer.setParent(parentAnswer);
+        answerRepository.save(answer);
     }
 }

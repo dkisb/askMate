@@ -6,7 +6,6 @@ import com.codecool.askmateoop.errorhandler.custom_exceptions.UsernameAlreadyExi
 import com.codecool.askmateoop.model.entities.Role;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.model.payload.dto.JwtResponse;
-import com.codecool.askmateoop.model.payload.dto.user.LoginDTO;
 import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
 import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
 import com.codecool.askmateoop.model.payload.dto.user.PointsDTO;
@@ -91,7 +90,6 @@ public class UserServiceTest {
     @Test
     void loginUserWithValidCredentialsThenReturnJwtToken() {
         LoginRequestDTO loginRequest = new LoginRequestDTO("testuser", "password");
-
         User userDetails = new User(
                 "testuser",
                 "password",
@@ -195,7 +193,7 @@ public class UserServiceTest {
         UserEntity userEntity = new UserEntity();
         userEntity.setId(1);
         userEntity.setUsername("testUser");
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(userEntity));
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(userEntity));
 
         userService.deleteUser(1);
 
@@ -300,5 +298,4 @@ public class UserServiceTest {
         assertThrows(NoSuchElementException.class, () -> userService.deleteAnyUser(user.getId()));
         verify(userRepository, never()).delete(any(UserEntity.class));
     }
-
 }
