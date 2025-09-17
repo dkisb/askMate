@@ -2,5 +2,8 @@ package com.codecool.askmateoop.model.payload.dto.answer;
 
 import java.sql.Timestamp;
 
-public record AnswerDTO(int id, String content, Timestamp created, String author) {
+public record AnswerDTO(int id, String content, Timestamp created, String author, Integer parentId,
+                        Integer questionId,
+                        int likes,
+                        int dislikes) {
 }

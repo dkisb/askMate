@@ -2,6 +2,7 @@ package com.codecool.askmateoop.controller;
 
 import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.NewReplyDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.UpdatedAnswerDTO;
 import com.codecool.askmateoop.service.AnswerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +35,8 @@ public class AnswerController {
     }
 
     @PostMapping("/a/{parent_id}")
-    public void addNewComment(@PathVariable("parent_id") int id, @RequestBody NewAnswerDTO newAnswerDTO) {
-        answerService.addCommentOfComment(id, newAnswerDTO);
+    public void addNewComment(@PathVariable("parent_id") int id, @RequestBody NewReplyDTO newReplyDTO) {
+        answerService.addCommentOfComment(id, newReplyDTO);
     }
 
     @PatchMapping("/")

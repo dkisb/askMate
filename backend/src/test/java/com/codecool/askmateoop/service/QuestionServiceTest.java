@@ -46,8 +46,8 @@ public class QuestionServiceTest {
         question2.setId(2);
         List<Question> questions = List.of(question1, question2);
         when(questionRepository.findAll()).thenReturn(questions);
-        QuestionDTO dto1 = new QuestionDTO(1, "Title1", null, null);
-        QuestionDTO dto2 = new QuestionDTO(2, "Title2", null, null);
+        QuestionDTO dto1 = new QuestionDTO(1, "Title1", null, null, "testUser");
+        QuestionDTO dto2 = new QuestionDTO(2, "Title2", null, null, "testUser2");
         List<QuestionDTO> expected = List.of(dto1, dto2);
         assertEquals(expected, questionService.getAllQuestions());
     }
