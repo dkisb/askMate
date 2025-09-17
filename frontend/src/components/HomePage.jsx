@@ -278,7 +278,7 @@ export default function HomePage() {
       </Dialog>
 
       <Box sx={{ display: { xs: 'block', md: 'flex' }, gap: 2 }}>
-        <Box sx={{ flex: '0 0 720px' }}>
+        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 0' }, mt: 11 }}>
           <PostList
             loading={loading}
             questions={sortedQuestions}
@@ -292,8 +292,19 @@ export default function HomePage() {
             currentUserId={currentUserId}
           />
         </Box>
-        <Box sx={{ flex: '0 0 360px', alignSelf: 'normal', position: 'relative', top: 88, left: 120 }}>
-          <TopicsList />
+        <Box
+          sx={{
+            flex: { xs: '1 1 100%', md: '1 1 0' },
+            display: { xs: 'block', md: 'flex' },
+            alignItems: { md: 'center' },
+            justifyContent: { md: 'center' },
+            position: { xs: 'static', md: 'sticky' },
+            top: { md: 0 },
+            height: { md: '100vh' },
+            pl: { md: 6 }
+          }}
+        >
+          <TopicsList topPostTitle={sortedQuestions[0]?.title || ''} />
         </Box>
       </Box>
 

@@ -15,24 +15,35 @@ const mockTopics = [
   { id: 5, name: 'CSS', upvotes: 610, posts: 41 },
 ];
 
-export default function TopicsList() {
+export default function TopicsList({ topPostTitle }) {
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+    <Card elevation={3} sx={{ width: '100%' }}>
+      <CardContent sx={{ p: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
           Active Topics
         </Typography>
+        {topPostTitle ? (
+          <>
+            <Typography variant="subtitle2" color="text.secondary">
+              Top post of the week
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              {topPostTitle}
+            </Typography>
+          </>
+        ) : null}
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Most upvoted posts and total upvotes
+          Most upvoted topics and total upvotes
         </Typography>
-        <List dense disablePadding>
+        <List disablePadding>
           {mockTopics.map((t, idx) => (
             <>
-              <ListItem key={t.id} sx={{ py: 1 }} secondaryAction={<Chip size="small" label={`${t.upvotes} upvotes`} /> }>
+              <ListItem key={t.id} sx={{ py: 2 }} secondaryAction={<Chip size="small" label={`${t.upvotes} upvotes`} /> }>
                 <ListItemText
+                  primaryTypographyProps={{ variant: 'subtitle1' }}
                   primary={t.name}
                   secondary={
-                    <Typography variant="caption" color="text.secondary">{t.posts} posts</Typography>
+                    <Typography variant="body2" color="text.secondary">{t.posts} posts</Typography>
                   }
                 />
               </ListItem>
