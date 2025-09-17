@@ -6,6 +6,7 @@ import com.codecool.askmateoop.model.entities.Question;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
+import com.codecool.askmateoop.model.payload.dto.answer.NewReplyDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.UpdatedAnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.question.UpdatedQuestionDTO;
 import com.codecool.askmateoop.repository.AnswerRepository;
@@ -68,9 +69,9 @@ public class AnswerServiceTest {
         answer3.setCreatedAt(timestamp);
         List<Answer> answers = List.of(answer1, answer2, answer3);
         when(answerRepository.getAllByQuestionId(questionId)).thenReturn(Optional.of(answers));
-        AnswerDTO answerDTO1 = new AnswerDTO(1, "Content1", timestamp);
-        AnswerDTO answerDTO2 = new AnswerDTO(2, "Content2", timestamp);
-        AnswerDTO answerDTO3 = new AnswerDTO(3, "Content3", timestamp);
+        AnswerDTO answerDTO1 = new AnswerDTO(1, "Content1", timestamp, "testUser", 0, 0, 0, 0);
+        AnswerDTO answerDTO2 = new AnswerDTO(2, "Content2", timestamp, "testUser2", 0, 0, 0, 0);
+        AnswerDTO answerDTO3 = new AnswerDTO(3, "Content3", timestamp, "testUser3", 0, 0, 0, 0);
         List<AnswerDTO> expected = List.of(answerDTO1, answerDTO2, answerDTO3);
         assertEquals(expected, answerService.getAnswers(questionId));
     }
@@ -286,7 +287,7 @@ public class AnswerServiceTest {
     @Test
     void addCommentOfCommentWithValidParentIdAndQuestionIdThenAddComment() {
         int parentId = 1;
-        NewAnswerDTO dto = new NewAnswerDTO("New comment", 3, 5);
+        NewReplyDTO dto = new NewReplyDTO("New comment", 3, 5);
         Question question = new Question();
         question.setId(3);
         when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
@@ -307,15 +308,15 @@ public class AnswerServiceTest {
     @Test
     void addCommentOfCommentWithInvalidQuestionIdThenThrowNoSuchElementException() {
         int parentId = 11;
-        NewAnswerDTO dto = new NewAnswerDTO("New comment", 3, 5);
-        when(questionRepository.findById(dto.questionId())).thenReturn(Optional.empty());
+        NewReplyDTO dto = new NewReplyDTO("New comment", 3, 5);
+        when(questionRepository.findById(dto.parentId())).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> answerService.addCommentOfComment(parentId, dto));
     }
 
     @Test
     void addCommentOfCommentWithInvalidParentIdThenThrowNoSuchElementException() {
         int parentId = 11;
-        NewAnswerDTO dto = new NewAnswerDTO("New comment", 3, 5);
+        NewReplyDTO dto = new NewReplyDTO("New comment", 3, 5);
         Question question = new Question();
         question.setId(3);
         when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
