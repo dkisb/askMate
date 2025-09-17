@@ -72,7 +72,7 @@ public class QuestionService {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         if (question.getAuthor().getId() != currentUser.getId()) {
-            throw new NotAllowedOperationException("You can only edit your onw question");
+            throw new NotAllowedOperationException("You can only edit your own question");
         }
         question.setTitle(questionDTO.title());
         question.setContent(questionDTO.content());

@@ -214,4 +214,77 @@ public class QuestionServiceTest {
         assertEquals("New Content", captured.getContent());
         assertEquals(user, captured.getAuthor());
     }
+
+    @Test
+    void updateQuestionWhenUserIsNotAuthorizedThenThrowsNotAllowedOperationException() {
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UpdatedQuestionDTO dto = new UpdatedQuestionDTO(5, "New Title", "New Content");
+        UserEntity user = new UserEntity();
+        user.setId(2);
+        user.setUsername("testUser");
+        UserEntity user2 = new UserEntity();
+        user2.setUsername("realAuthor");
+        when(userRepository.findByUsername(springUser.getUsername()))
+                .thenReturn(Optional.of(user));
+        Question question = new Question();
+        question.setId(5);
+        question.setTitle("Old Title");
+        question.setContent("Old Content");
+        question.setAuthor(user2);
+        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+        assertThrows(NotAllowedOperationException.class, () -> questionService.updateQuestion(dto));
+    }
+
+    @Test
+    public void updateAnyQuestionWithValidQuestionId() {
+        UpdatedQuestionDTO dto = new UpdatedQuestionDTO(5, "New Title", "New Content");
+        Question question = new Question();
+        question.setId(5);
+        question.setTitle("Old Title");
+        question.setContent("Old Content");
+        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+        when(questionRepository.save(any(Question.class))).thenReturn(question);
+        questionService.updateAnyQuestion(dto);
+        ArgumentCaptor<Question> captor = ArgumentCaptor.forClass(Question.class);
+        verify(questionRepository).save(captor.capture());
+        Question captured = captor.getValue();
+        assertEquals("New Title", captured.getTitle());
+        assertEquals("New Content", captured.getContent());
+    }
+
+    @Test
+    public void updateQuestionWithInvalidQuestionId() {
+        UpdatedQuestionDTO dto = new UpdatedQuestionDTO(5, "New Title", "New Content");
+        when(questionRepository.findById(dto.id())).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> questionService.updateQuestion(dto));
+    }
+
+    @Test
+    void deleteAnyQuestionByIdWithValidQuestionId() {
+        int questionId = 5;
+        Question question = new Question();
+        question.setId(questionId);
+        question.setTitle("Title");
+        question.setContent("Content");
+        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+        doNothing().when(questionRepository).delete(any(Question.class));
+        questionService.deleteAnyQuestionById(question.getId());
+        ArgumentCaptor<Question> captor = ArgumentCaptor.forClass(Question.class);
+        verify(questionRepository).delete(captor.capture());
+        Question captured = captor.getValue();
+        assertEquals("Title", captured.getTitle());
+        assertEquals("Content", captured.getContent());
+    }
+
+    @Test
+    void deleteAnyQuestionByIdWithInvalidQuestionId() {
+        int questionId = 5;
+        when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> questionService.deleteAnyQuestionById(questionId));
+    }
 }
