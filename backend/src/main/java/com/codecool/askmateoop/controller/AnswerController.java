@@ -43,6 +43,26 @@ public class AnswerController {
         answerService.updateAnswer(answerDTO);
     }
 
+    @GetMapping("/like/{id}")
+    public int getLikes(@PathVariable int id) {
+        return answerService.getLikes(id);
+    }
+
+    @GetMapping("/dislike/{id}")
+    public int getDislikes(@PathVariable int id) {
+        return answerService.getDislikes(id);
+    }
+
+    @PatchMapping("/like/{id}")
+    public void likeAnswer(@PathVariable int id) {
+        answerService.likeAnswer(id);
+    }
+
+    @PatchMapping("/dislike/{id}")
+    public void dislikeAnswer(@PathVariable int id) {
+        answerService.dislikeAnswer(id);
+    }
+
     @DeleteMapping("/{id}")
     public void deleteQuestionById(@PathVariable int id) {
         answerService.deleteAnswer(id);

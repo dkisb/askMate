@@ -36,12 +36,16 @@ public class QuestionService {
         if (questions.isEmpty()) {
             return new ArrayList<>();
         }
-        return questions.stream().map(q -> new QuestionDTO(q.getId(), q.getTitle(), q.getContent(), q.getCreatedAt())).toList();
+        return questions.stream().map(q -> new QuestionDTO(q.getId(), q.getTitle(), q.getContent(), q.getCreatedAt(), q.getAuthor().getUsername())).toList();
     }
 
     public QuestionDTO getQuestionById(int id) {
-        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
-        return new QuestionDTO(question.getId(), question.getTitle(), question.getContent(), question.getCreatedAt());
+        Optional<Question> questionOpt = questionRepository.findById(id);
+        if (questionOpt.isEmpty()) {
+            throw new NoSuchElementException("Question not found with id " + id);
+        }
+        Question question = questionOpt.get();
+        return new QuestionDTO(question.getId(), question.getTitle(), question.getContent(),question.getCreatedAt(),question.getAuthor().getUsername());
     }
 
     public void deleteQuestionById(int id) {
@@ -85,9 +89,31 @@ public class QuestionService {
         question.setContent(questionDTO.content());
         questionRepository.save(question);
     }
+    public void likeQuestion(int id) {
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
+        question.setLikes(question.getLikes() + 1);
+        questionRepository.save(question);
+    }
+    public int getLikes(int id){
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
+        return question.getLikes();
+    }
+
+    public void dislikeQuestion(int id){
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
+        question.setDislikes(question.getDislikes() + 1);
+        questionRepository.save(question);
+    }
+
+    public int getDislikes(int id){
+        Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
+        return question.getDislikes();
+    }
 
     public void deleteAnyQuestionById(int id) {
         Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
         questionRepository.delete(question);
     }
+
+
 }

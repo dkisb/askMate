@@ -37,17 +37,18 @@ public class AnswerService {
     public List<AnswerDTO> getAnswers(int questionId) {
         questionRepository.findById(questionId).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + questionId));
         List<Answer> answers = answerRepository.getAllByQuestionId(questionId).orElseThrow(() -> new NoSuchElementException("Answers not found with questionId: " + questionId));
-        return answers.stream().map(a -> new AnswerDTO(a.getId(), a.getContent(), a.getCreatedAt())).toList();
+        return answers.stream().map(a -> new AnswerDTO(a.getId(), a.getContent(), a.getCreatedAt(), a.getAuthor().getUsername())).toList();
     }
 
     public void addNewAnswer(NewAnswerDTO answerDTO) {
         Question question = questionRepository.findById(answerDTO.questionId()).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + answerDTO.questionId()));
-        UserEntity author = userRepository.findById(answerDTO.userId()).orElseThrow(() -> new NoSuchElementException("User not found with id: " + answerDTO.userId()));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         Answer answer = new Answer();
         answer.setContent(answerDTO.content());
         answer.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
         answer.setQuestion(question);
-        answer.setAuthor(author);
+        answer.setAuthor(currentUser);
         answerRepository.save(answer);
     }
 
@@ -60,6 +61,28 @@ public class AnswerService {
         }
         answer.setContent(answerDTO.content());
         answerRepository.save(answer);
+    }
+
+    public void likeAnswer(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        answer.setLikes(answer.getLikes() + 1);
+        answerRepository.save(answer);
+    }
+
+    public int getLikes(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        return answer.getLikes();
+    }
+
+    public void dislikeAnswer(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        answer.setDislikes(answer.getDislikes() + 1);
+        answerRepository.save(answer);
+    }
+
+    public int getDislikes(int id){
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        return answer.getDislikes();
     }
 
     public void deleteAnswer(int id){

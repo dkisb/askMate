@@ -37,6 +37,25 @@ public class QuestionController {
         questionService.updateQuestion(question);
     }
 
+    @GetMapping("/like/{id}")
+    public int getLikes(@PathVariable int id) {
+        return questionService.getLikes(id);
+    }
+    @GetMapping("/dislike/{id}")
+    public int getDislikes(@PathVariable int id) {
+        return questionService.getDislikes(id);
+    }
+
+    @PatchMapping("/like/{id}")
+    public void likeQuestion(@PathVariable int id) {
+        questionService.likeQuestion(id);
+    }
+
+    @PatchMapping("/dislike/{id}")
+    public void dislikeQuestion(@PathVariable int id) {
+        questionService.dislikeQuestion(id);
+    }
+
     @DeleteMapping("/{id}")
     public void deleteQuestionById(@PathVariable int id) {
         questionService.deleteQuestionById(id);

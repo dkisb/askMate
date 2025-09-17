@@ -4,9 +4,7 @@ import com.codecool.askmateoop.errorhandler.custom_exceptions.NotAllowedOperatio
 import com.codecool.askmateoop.errorhandler.custom_exceptions.EmailAlreadyInUseException;
 import com.codecool.askmateoop.errorhandler.custom_exceptions.UsernameAlreadyExistsException;
 import com.codecool.askmateoop.model.payload.dto.JwtResponse;
-import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
-import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
-import com.codecool.askmateoop.model.payload.dto.user.PointsDTO;
+import com.codecool.askmateoop.model.payload.dto.user.*;
 import com.codecool.askmateoop.model.entities.Role;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.repository.UserRepository;
@@ -22,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.EnumSet;
@@ -94,6 +93,12 @@ public class UserService {
         UserEntity user = userRepository.findById(pointsDTO.userId()).orElseThrow(() -> new NoSuchElementException("User not found with userId: " + pointsDTO.userId()));
         user.setReliabilityPoints(user.getReliabilityPoints() + pointsDTO.points());
         userRepository.save(user);
+    }
+
+    public LoginDTO getMe(){
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return new LoginDTO(currentUser.getUsername(), currentUser.getId());
     }
 
     public void deleteUser(int id) {

@@ -1,9 +1,7 @@
 
 package com.codecool.askmateoop.controller;
 
-import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
-import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
-import com.codecool.askmateoop.model.payload.dto.user.PointsDTO;
+import com.codecool.askmateoop.model.payload.dto.user.*;
 import com.codecool.askmateoop.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -34,12 +32,17 @@ public class UserController {
         userService.createUser(newUser);
     }
 
+    @GetMapping("/me")
+    public LoginDTO me(){
+        return userService.getMe();
+    }
+
     @GetMapping("/points/{user_id}")
     public int getPoints(@PathVariable int user_id) {
         return userService.getReliabilityLevel(user_id);
    }
 
-   @PatchMapping("/")
+    @PatchMapping("/")
     public void addNewPoints(@RequestBody PointsDTO pointsDTO) {
         userService.addNewPoints(pointsDTO);
     }
