@@ -56,8 +56,6 @@ public class QuestionController {
         questionService.dislikeQuestion(id);
     }
 
-
-
     @DeleteMapping("/{id}")
     public void deleteQuestionById(@PathVariable int id) {
         questionService.deleteQuestionById(id);
