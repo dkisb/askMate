@@ -320,8 +320,8 @@ export default function QuestionPage() {
 
       <h3 className="text-lg font-bold mb-4">Comments</h3>
       {sortedComments.length > 0 ? (
-        sortedComments.map((comment) => (
-          <div key={comment.id ?? Math.random()} className="p-6 mb-3 bg-white rounded-lg border-t border-gray-200">
+        sortedComments.map((comment, idx) => (
+          <div key={comment.id ?? idx} className="p-6 mb-3 bg-white rounded-lg border-t border-gray-200">
             <p className="text-lg font-bold mb-1">{comment.content}</p>
             <div className="text-xs text-gray-700 mb-2">By {comment.author}</div>
             <small className="text-gray-600" title={formatExactTime(comment.created || comment.createdAt)}>
