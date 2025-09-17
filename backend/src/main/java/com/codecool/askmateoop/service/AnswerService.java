@@ -19,7 +19,6 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 @Service
 public class AnswerService {
@@ -43,8 +42,7 @@ public class AnswerService {
 
     public void addNewAnswer(NewAnswerDTO answerDTO) {
         Question question = questionRepository.findById(answerDTO.questionId()).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + answerDTO.questionId()));
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity author = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NotAllowedOperationException("User not found"));
+        UserEntity author = userRepository.findById(answerDTO.userId()).orElseThrow(() -> new NoSuchElementException("User not found with id: " + answerDTO.userId()));
         Answer answer = new Answer();
         answer.setContent(answerDTO.content());
         answer.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
@@ -90,7 +88,7 @@ public class AnswerService {
         return new AnswerDTO(answer.getId(), answer.getContent(), answer.getCreatedAt());
     }
 
-    public void addNewComment(int id, NewAnswerDTO answerDTO) {
+    public void addCommentOfComment(int id, NewAnswerDTO answerDTO) {
         Question question = questionRepository.findById(answerDTO.questionId()).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + answerDTO.questionId()));
         Answer parentAnswer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + answerDTO.questionId()));
         Answer answer = new Answer();

@@ -35,7 +35,7 @@ public class AnswerController {
 
     @PostMapping("/a/{parent_id}")
     public void addNewComment(@PathVariable("parent_id") int id, @RequestBody NewAnswerDTO newAnswerDTO) {
-        answerService.addNewComment(id, newAnswerDTO);
+        answerService.addCommentOfComment(id, newAnswerDTO);
     }
 
     @PatchMapping("/")
