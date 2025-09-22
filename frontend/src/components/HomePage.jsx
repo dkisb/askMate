@@ -294,13 +294,11 @@ export default function HomePage() {
         </Box>
         <Box
           sx={{
-            flex: { xs: '1 1 100%', md: '1 1 0' },
-            display: { xs: 'block', md: 'flex' },
-            alignItems: { md: 'center' },
-            justifyContent: { md: 'center' },
+            flex: { xs: '1 1 100%', md: '0 0 360px' },
+            width: { md: 360 },
+            display: { xs: 'block', md: 'block' },
             position: { xs: 'static', md: 'sticky' },
             top: { md: 0 },
-            height: { md: '100vh' },
             pl: { md: 6 }
           }}
         >

@@ -6,15 +6,15 @@ import { postCommentReply } from '../utils/api.js';
 export default function CommentNode({
   comment,
   questionId,
-  childrenByParent,      // <- new
+  childrenByParent, 
   likeCountsComments,
   dislikeCountsComments,
   commentReactions,
   pendingComments,
   onToggleReaction,
   onShareComment,
-  onReplyPosted,         // <- new callback
-  currentUserId,         // <- for NewReplyDTO
+  onReplyPosted,         
+  currentUserId,      
 }) {
   const commentId = comment.id;
   const [replyOpen, setReplyOpen] = useState(false);
