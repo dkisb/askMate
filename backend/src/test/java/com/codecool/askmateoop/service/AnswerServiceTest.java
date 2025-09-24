@@ -8,7 +8,6 @@ import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewReplyDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.UpdatedAnswerDTO;
-import com.codecool.askmateoop.model.payload.dto.question.UpdatedQuestionDTO;
 import com.codecool.askmateoop.repository.AnswerRepository;
 import com.codecool.askmateoop.repository.QuestionRepository;
 import com.codecool.askmateoop.repository.UserRepository;
@@ -25,11 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,25 +48,55 @@ public class AnswerServiceTest {
     @Test
     void getAnswersWithValidQuestionId(){
         int questionId = 1;
-        when(questionRepository.findById(questionId)).thenReturn(Optional.of(new Question()));
+        Question question = new Question();
+        question.setId(questionId);
+        when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
         Answer answer1 = new Answer();
         Answer answer2 = new Answer();
         Answer answer3 = new Answer();
-        answer1.setId(1);
-        answer2.setId(2);
-        answer3.setId(3);
+        answer1.setId(11);
+        answer2.setId(22);
+        answer3.setId(33);
         answer1.setContent("Content1");
         answer2.setContent("Content2");
         answer3.setContent("Content3");
+        UserEntity user1 = new UserEntity();
+        user1.setUsername("author1");
+        UserEntity user2 = new UserEntity();
+        user2.setUsername("author2");
+        UserEntity user3 = new UserEntity();
+        user3.setUsername("author3");
         Timestamp timestamp = Mockito.mock(Timestamp.class);
         answer1.setCreatedAt(timestamp);
         answer2.setCreatedAt(timestamp);
         answer3.setCreatedAt(timestamp);
+        answer1.setAuthor(user1);
+        answer2.setAuthor(user2);
+        answer3.setAuthor(user3);
+        answer1.setQuestion(question);
+        answer2.setQuestion(question);
+        answer3.setQuestion(question);
+        Answer parent1 = new Answer();
+        Answer parent2 = new Answer();
+        Answer parent3 = new Answer();
+        parent1.setId(1);
+        parent2.setId(2);
+        parent3.setId(3);
+        answer1.setLikes(2);
+        answer2.setLikes(4);
+        answer3.setLikes(6);
+        answer1.setDislikes(1);
+        answer2.setDislikes(3);
+        answer3.setDislikes(0);
+        answer1.setParent(parent1);
+        answer2.setParent(parent2);
+        answer3.setParent(parent3);
+
         List<Answer> answers = List.of(answer1, answer2, answer3);
         when(answerRepository.getAllByQuestionId(questionId)).thenReturn(Optional.of(answers));
-        AnswerDTO answerDTO1 = new AnswerDTO(1, "Content1", timestamp, "testUser", 0, 0, 0, 0);
-        AnswerDTO answerDTO2 = new AnswerDTO(2, "Content2", timestamp, "testUser2", 0, 0, 0, 0);
-        AnswerDTO answerDTO3 = new AnswerDTO(3, "Content3", timestamp, "testUser3", 0, 0, 0, 0);
+        AnswerDTO answerDTO1 = new AnswerDTO(11, "Content1", timestamp, "author1", 1, 1, 2, 1);
+        AnswerDTO answerDTO2 = new AnswerDTO(22, "Content2", timestamp, "author2", 2, 1, 4, 3);
+        AnswerDTO answerDTO3 = new AnswerDTO(33, "Content3", timestamp, "author3", 3, 1, 6, 0);
         List<AnswerDTO> expected = List.of(answerDTO1, answerDTO2, answerDTO3);
         assertEquals(expected, answerService.getAnswers(questionId));
     }
@@ -181,6 +206,88 @@ public class AnswerServiceTest {
     }
 
     @Test
+    void likeAnswerWithValidAnswerIdThenSaveAnswer() {
+        int answerId = 1;
+        Answer answer = new Answer();
+        answer.setId(answerId);
+        answer.setLikes(4);
+        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
+        when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
+
+        answerService.likeAnswer(answerId);
+
+        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(answerCaptor.capture());
+        Answer capturedAnswer = answerCaptor.getValue();
+        assertEquals(5, capturedAnswer.getLikes());
+    }
+
+    @Test
+    void likeAnswerWithInvalidAnswerIdThenThrowNoSuchElementException() {
+        int answerId = 1;
+        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.likeAnswer(answerId));
+    }
+
+    @Test
+    void getLikesWithValidAnswerIdThenGetLikes() {
+        int answerId = 1;
+        Answer answer = new Answer();
+        answer.setId(answerId);
+        answer.setLikes(4);
+        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
+        assertEquals(4, answerService.getLikes(answerId));
+    }
+
+    @Test
+    void getLikesWithInvalidAnswerIdThenThrowNoSuchElementException() {
+        int answerId = 1;
+        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.getLikes(answerId));
+    }
+
+    @Test
+    void dislikeAnswerWithValidAnswerIdThenSaveAnswer() {
+        int answerId = 10;
+        Answer answer = new Answer();
+        answer.setId(answerId);
+        answer.setDislikes(4);
+        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
+        when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
+
+        answerService.dislikeAnswer(answerId);
+
+        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(answerCaptor.capture());
+        Answer capturedAnswer = answerCaptor.getValue();
+        assertEquals(5, capturedAnswer.getDislikes());
+    }
+
+    @Test
+    void dislikeAnswerWithInvalidAnswerIdThenThrowNoSuchElementException() {
+        int answerId = 10;
+        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.dislikeAnswer(answerId));
+    }
+
+    @Test
+    void getDislikesWithValidAnswerIdThenGetDislikes() {
+        int answerId = 10;
+        Answer answer = new Answer();
+        answer.setId(answerId);
+        answer.setDislikes(5);
+        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
+        assertEquals(5, answerService.getDislikes(answerId));
+    }
+
+    @Test
+    void getDislikesWithInvalidAnswerIdThenThrowNoSuchElementException() {
+        int answerId = 10;
+        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.getDislikes(answerId));
+    }
+
+    @Test
     void deleteAnswerWhenUserIsAuthorizedThenDeleteAnswer() {
         User springUser = new User("testUser", "password", new HashSet<>());
         Authentication authentication = mock(Authentication.class);
@@ -270,11 +377,25 @@ public class AnswerServiceTest {
     @Test
     void getAnswerWithValidAnswerIdThenGetAnswer() {
         int answerId = 4;
+        UserEntity author = new UserEntity();
+        author.setUsername("Author");
         Answer answer = new Answer();
         answer.setId(answerId);
         answer.setContent("Content");
+        answer.setAuthor(author);
+        Timestamp timestamp = Mockito.mock(Timestamp.class);
+        answer.setCreatedAt(timestamp);
+        Answer parent = new Answer();
+        parent.setId(2);
+        answer.setParent(parent);
+        Question question = new Question();
+        question.setId(1);
+        answer.setQuestion(question);
+        answer.setLikes(3);
+        answer.setDislikes(1);
         when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-        assertEquals("Content", answerService.getAnswer(answerId).content());
+        AnswerDTO expected = new AnswerDTO(4, "Content", timestamp, answer.getAuthor().getUsername(), parent.getId(), question.getId(), 3, 1);
+        assertEquals(expected, answerService.getAnswer(answerId));
     }
 
     @Test
@@ -285,16 +406,29 @@ public class AnswerServiceTest {
     }
 
     @Test
-    void addCommentOfCommentWithValidParentIdAndQuestionIdThenAddComment() {
-        int parentId = 1;
+    void addCommentOfCommentWithValidParentIdAndUserIdThenAddComment() {
+        int parentId = 5;
         NewReplyDTO dto = new NewReplyDTO("New comment", 3, 5);
+        UserEntity author = new UserEntity();
+        when(userRepository.findById(dto.userId())).thenReturn(Optional.of(author));
         Question question = new Question();
-        question.setId(3);
-        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
         Answer parentAnswer = new Answer();
-        parentAnswer.setId(parentId);
-        when(answerRepository.findById(parentId)).thenReturn(Optional.of(parentAnswer));
+        parentAnswer.setId(dto.parentId());
+        Answer reply1 = new Answer();
+        Answer reply2 = new Answer();
+        List<Answer> replies = new ArrayList<>();
+        replies.add(reply1);
+        replies.add(reply2);
+        parentAnswer.setReplies(replies);
+        when(answerRepository.findById(dto.parentId())).thenReturn(Optional.of(parentAnswer));
         Answer answer = new Answer();
+        answer.setContent(dto.content());
+        answer.setAuthor(author);
+        answer.setQuestion(question);
+        Timestamp timestamp = Mockito.mock(Timestamp.class);
+        answer.setCreatedAt(timestamp);
+        parentAnswer.getReplies().add(answer);
+        answer.setParent(parentAnswer);
         when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
 
         answerService.addCommentOfComment(parentId, dto);
@@ -306,20 +440,20 @@ public class AnswerServiceTest {
     }
 
     @Test
-    void addCommentOfCommentWithInvalidQuestionIdThenThrowNoSuchElementException() {
-        int parentId = 11;
+    void addCommentOfCommentWithInvalidUserIdThenThrowNoSuchElementException() {
+        int parentId = 5;
         NewReplyDTO dto = new NewReplyDTO("New comment", 3, 5);
-        when(questionRepository.findById(dto.parentId())).thenReturn(Optional.empty());
+        when(userRepository.findById(dto.userId())).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> answerService.addCommentOfComment(parentId, dto));
     }
 
     @Test
     void addCommentOfCommentWithInvalidParentIdThenThrowNoSuchElementException() {
         int parentId = 11;
-        NewReplyDTO dto = new NewReplyDTO("New comment", 3, 5);
+        NewReplyDTO dto = new NewReplyDTO("New comment", 3, 11);
         Question question = new Question();
         question.setId(3);
-        when(questionRepository.findById(question.getId())).thenReturn(Optional.of(question));
+        when(userRepository.findById(dto.userId())).thenReturn(Optional.of(new UserEntity()));
         when(answerRepository.findById(parentId)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> answerService.addCommentOfComment(parentId, dto));
     }
