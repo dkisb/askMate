@@ -44,6 +44,16 @@ public class AnswerController {
         answerService.updateAnswer(answerDTO);
     }
 
+    @PostMapping("/like/{id}")
+    public void addLikeToAnswer(@PathVariable int id) {
+        answerService.addLikeToAnswer(id);
+    }
+
+    @PostMapping("/dislike/{id}")
+    public void addDislikeToAnswer(@PathVariable int id) {
+        answerService.addDislikeToAnswer(id);
+    }
+
     @GetMapping("/like/{id}")
     public int getLikes(@PathVariable int id) {
         return answerService.getLikes(id);
