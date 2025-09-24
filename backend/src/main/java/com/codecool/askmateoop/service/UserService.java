@@ -105,7 +105,7 @@ public class UserService {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         if (currentUser.getId() != id) {
-            throw new NotAllowedOperationException("You are not allowed to delete this answer");
+            throw new NotAllowedOperationException("You are not allowed to delete this user");
         }
         userRepository.delete(currentUser);
     }
@@ -125,5 +125,25 @@ public class UserService {
     public void deleteAnyUser(int id) {
         UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found"));
         userRepository.delete(user);
+    }
+
+    public EmailDTO getEmail() {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        return new EmailDTO(currentUser.getEmail());
+    }
+
+    public void editUser(ModifierDTO dto) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        if(!passwordEncoder.matches(dto.password(), currentUser.getPassword())) {
+            throw new NotAllowedOperationException("You are not allowed to edit this user's data");
+        }
+        currentUser.setUsername(dto.userName());
+        currentUser.setEmail(dto.email());
+        if (!dto.newPassword().isEmpty()) {
+            currentUser.setPassword(passwordEncoder.encode(dto.newPassword()));
+        }
+        userRepository.save(currentUser);
     }
 }

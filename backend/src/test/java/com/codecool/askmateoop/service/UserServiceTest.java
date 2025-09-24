@@ -53,7 +53,7 @@ public class UserServiceTest {
 
     @Test
     public void createUserWithValidCredentialsThenSaveUser() {
-        NewUserDTO dto = new NewUserDTO("testuser", "test@test.com", "123456");
+        NewUserDTO dto = new NewUserDTO("testUser", "test@test.com", "123456");
         when(userRepository.existsByUsername(dto.username())).thenReturn(false);
         when(userRepository.existsByEmail(dto.email())).thenReturn(false);
         when(passwordEncoder.encode(dto.password())).thenReturn("encodedPw");
@@ -64,7 +64,7 @@ public class UserServiceTest {
         verify(userRepository).save(captor.capture());
 
         UserEntity savedUser = captor.getValue();
-        assertEquals("testuser", savedUser.getUsername());
+        assertEquals("testUser", savedUser.getUsername());
         assertEquals("test@test.com", savedUser.getEmail());
         assertEquals("encodedPw", savedUser.getPassword());
         assertTrue(savedUser.getRoles().contains(Role.ROLE_USER));

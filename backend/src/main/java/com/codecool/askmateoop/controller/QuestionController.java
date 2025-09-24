@@ -32,6 +32,16 @@ public class QuestionController {
         return questionService.addNewQuestion(question);
     }
 
+    @PatchMapping("/like/{id}")
+    public void addLikeToQuestion(@PathVariable int id) {
+        questionService.addLikeToQuestion(id);
+    }
+
+    @PatchMapping("/dislike/{id}")
+    public void addDislikeToQuestion(@PathVariable int id) {
+        questionService.addDislikeToQuestion(id);
+    }
+
     @PutMapping("/")
     public void updateQuestion(@RequestBody UpdatedQuestionDTO question) {
         questionService.updateQuestion(question);
@@ -41,11 +51,12 @@ public class QuestionController {
     public int getLikes(@PathVariable int id) {
         return questionService.getLikes(id);
     }
+
     @GetMapping("/dislike/{id}")
     public int getDislikes(@PathVariable int id) {
         return questionService.getDislikes(id);
     }
-
+/*
     @PatchMapping("/like/{id}")
     public void likeQuestion(@PathVariable int id) {
         questionService.likeQuestion(id);
@@ -55,6 +66,8 @@ public class QuestionController {
     public void dislikeQuestion(@PathVariable int id) {
         questionService.dislikeQuestion(id);
     }
+
+ */
 
     @DeleteMapping("/{id}")
     public void deleteQuestionById(@PathVariable int id) {

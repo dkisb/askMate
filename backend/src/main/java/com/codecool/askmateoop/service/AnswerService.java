@@ -1,6 +1,8 @@
 package com.codecool.askmateoop.service;
 
 import com.codecool.askmateoop.errorhandler.custom_exceptions.NotAllowedOperationException;
+import com.codecool.askmateoop.model.entities.ratings.AnswerDislike;
+import com.codecool.askmateoop.model.entities.ratings.AnswerLike;
 import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
 import com.codecool.askmateoop.model.entities.Answer;
@@ -8,9 +10,7 @@ import com.codecool.askmateoop.model.entities.Question;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.model.payload.dto.answer.NewReplyDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.UpdatedAnswerDTO;
-import com.codecool.askmateoop.repository.AnswerRepository;
-import com.codecool.askmateoop.repository.QuestionRepository;
-import com.codecool.askmateoop.repository.UserRepository;
+import com.codecool.askmateoop.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -27,12 +27,16 @@ public class AnswerService {
     private final AnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
     private final UserRepository userRepository;
+    private final AnswerLikeRepository answerLikeRepository;
+    private final AnswerDislikeRepository answerDislikeRepository;
 
     @Autowired
-    public AnswerService(AnswerRepository answerRepository, QuestionRepository questionRepository, UserRepository userRepository) {
+    public AnswerService(AnswerRepository answerRepository, QuestionRepository questionRepository, UserRepository userRepository, AnswerLikeRepository answerLikeRepository, AnswerDislikeRepository answerDislikeRepository) {
         this.answerRepository = answerRepository;
         this.questionRepository = questionRepository;
         this.userRepository = userRepository;
+        this.answerLikeRepository = answerLikeRepository;
+        this.answerDislikeRepository = answerDislikeRepository;
     }
 
     public List<AnswerDTO> getAnswers(int questionId) {
@@ -135,6 +139,46 @@ public class AnswerService {
         answer.setQuestion(parentAnswer.getQuestion());
         parentAnswer.getReplies().add(answer);
         answer.setParent(parentAnswer);
+        answerRepository.save(answer);
+    }
+
+    public void addLikeToAnswer(int id) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity reviewer = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        if (answerDislikeRepository.existsByAnswerIdAndReviewer(id, reviewer)) {
+            throw new NotAllowedOperationException("You have already disliked this answer");
+        }
+        if (answerLikeRepository.existsByAnswerIdAndReviewer(id, reviewer)) {
+            answerLikeRepository.deleteByAnswerIdAndReviewer(id, reviewer);
+            answer.setLikes(answer.getLikes() - 1);
+            answerRepository.save(answer);
+        }
+        AnswerLike like = new AnswerLike();
+        like.setAnswerId(id);
+        like.setReviewer(reviewer);
+        answerLikeRepository.save(like);
+        answer.setLikes(answer.getLikes() + 1);
+        answerRepository.save(answer);
+    }
+
+    public void addDislikeToAnswer(int id) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity reviewer = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
+        if (answerLikeRepository.existsByAnswerIdAndReviewer(id, reviewer)) {
+            throw new NotAllowedOperationException("You have already liked this answer");
+        }
+        if (answerDislikeRepository.existsByAnswerIdAndReviewer(id, reviewer)) {
+            answerDislikeRepository.deleteByAnswerIdAndReviewer(id, reviewer);
+            answer.setDislikes(answer.getDislikes() - 1);
+            answerRepository.save(answer);
+        }
+        AnswerDislike dislike = new AnswerDislike();
+        dislike.setAnswerId(id);
+        dislike.setReviewer(reviewer);
+        answerDislikeRepository.save(dislike);
+        answer.setDislikes(answer.getDislikes() + 1);
         answerRepository.save(answer);
     }
 }
