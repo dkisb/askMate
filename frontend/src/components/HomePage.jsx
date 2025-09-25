@@ -36,6 +36,7 @@ export default function HomePage() {
   const fromState = location.state || {};
   const [currentUserName, setCurrentUserName] = useState(fromState.userName ?? null);
   const [currentUserId, setCurrentUserId] = useState(fromState.userId ?? null);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const fetchData = async () => {
     setLoading(true);
@@ -104,7 +105,7 @@ export default function HomePage() {
     if (!token) return;
     (async () => {
       try {
-        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        const meRes = await fetch(`${API_URL}/api/user/me`, { headers: { Authorization: 'Bearer ' + token } });
         if (!meRes.ok) return;
         const me = await meRes.json();
         setCurrentUserName(me.userName ?? me.username ?? null);
@@ -113,7 +114,7 @@ export default function HomePage() {
         // ignore
       }
     })();
-  }, [currentUserId]);
+  }, [currentUserId, API_URL]);
 
   async function awardQuestionPoints() {
     try {

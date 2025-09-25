@@ -36,6 +36,7 @@ export default function QuestionPage() {
   const navigate = useNavigate();
   const fromState = location.state || {};
   const [currentUserId, setCurrentUserId] = useState(fromState.userId || null);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     async function ensureUser() {
@@ -43,7 +44,7 @@ export default function QuestionPage() {
       const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
       if (!token) { navigate('/', { replace: true }); return; }
       try {
-        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        const meRes = await fetch(`${API_URL}/api/user/me`, { headers: { Authorization: 'Bearer ' + token } });
         if (!meRes.ok) { navigate('/', { replace: true }); return; }
         const me = await meRes.json();
         const idFromMe = me.userId ?? me.id ?? null;
@@ -72,7 +73,7 @@ export default function QuestionPage() {
     }
     loadQuestion();
     return () => { isCancelled = true; };
-  }, [id, currentUserId, navigate]);
+  }, [id, currentUserId, navigate, API_URL]);
 
   // build flat list + children map
   useEffect(() => {

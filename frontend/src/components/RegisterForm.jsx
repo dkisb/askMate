@@ -10,11 +10,12 @@ export default function RegisterForm({ onRegistered }) {
   const [successfulRegistration, setSuccessfulRegistration] = useState(false);
   const navigate = useNavigate();
   const { login } = useUser();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      const response = await fetch('/api/user/register', {
+      const response = await fetch(`${API_URL}/api/user/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: userName, password, email }),
@@ -26,7 +27,7 @@ export default function RegisterForm({ onRegistered }) {
       setError(null);
 
       // Immediately log the user in with the provided credentials
-      const loginRes = await fetch('/api/user/login', {
+      const loginRes = await fetch(`${API_URL}/api/user/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: userName, password }),
@@ -49,7 +50,7 @@ export default function RegisterForm({ onRegistered }) {
         console.error('Error setting JWT token:', storageErr);
       }
 
-      const meRes = await fetch('/api/user/me', {
+      const meRes = await fetch(`${API_URL}/api/user/me`, {
         headers: { Authorization: 'Bearer ' + jwt },
       });
       if (!meRes.ok) {

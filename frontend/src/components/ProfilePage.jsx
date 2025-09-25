@@ -7,6 +7,7 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     setUserName(user?.userName || '');
@@ -19,7 +20,7 @@ export default function ProfilePage() {
     setMessage('');
     try {
       const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
-      const res = await fetch('/api/user/me', {
+      const res = await fetch(`${API_URL}/api/user/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
