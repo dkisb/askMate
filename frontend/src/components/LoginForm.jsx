@@ -8,7 +8,7 @@ export default function LoginForm() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { login } = useUser();
-  const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
   async function handleSubmit(e) {
     e.preventDefault();

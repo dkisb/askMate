@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 function getAuthHeader() {
   const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
