@@ -67,6 +67,7 @@ public class WebSecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/user/register").permitAll()
                         .requestMatchers("/api/user/login").permitAll()
                        // .requestMatchers("/api/user/myquestions").hasRole("USER")
@@ -91,7 +92,7 @@ public class WebSecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
         configuration.setAllowedOrigins(Arrays.asList(
-                "https://twenty-one-frontend.vercel.app",
+                "https://ask-mate-five.vercel.app",
                 "https://askmate-qc0t.onrender.com",
                 "http://localhost:5173"
         ));
