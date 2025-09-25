@@ -2,16 +2,15 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 
-# Csak POM -> dependency cache
+# Step 1: only copy pom.xml and download deps (cache layer)
 COPY pom.xml .
-RUN mvn -B -q -e -Dmaven.test.skip=true package
+RUN mvn -B -q -e -Dmaven.test.skip=true dependency:go-offline
 
-# Források
+# Step 2: now copy actual sources
 COPY src ./src
 
-# (Ha van) resources stb. jön a src alatt
-# Build (tesztek nélkül a gyorsabb és determinisztikusabb image miatt)
-RUN mvn -B -q -e -DskipTests package
+# Step 3: build the jar (now sources are present!)
+RUN mvn -B -q -e -Dmaven.test.skip=true package
 
 # ===== Runtime stage =====
 FROM eclipse-temurin:21-jre-alpine
