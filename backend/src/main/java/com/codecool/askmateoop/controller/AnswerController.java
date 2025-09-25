@@ -34,7 +34,7 @@ public class AnswerController {
         answerService.addNewAnswer(newAnswerDTO);
     }
 
-    @PostMapping("/a/{parent_id}")
+    @PostMapping("/a/{parent_id}")  // unnecessary parent_id: NewReplyDTO includes it
     public void addNewComment(@PathVariable("parent_id") int id, @RequestBody NewReplyDTO newReplyDTO) {
         answerService.addCommentOfComment(id, newReplyDTO);
     }
@@ -42,6 +42,16 @@ public class AnswerController {
     @PatchMapping("/")
     public void updateAnswer(@RequestBody UpdatedAnswerDTO answerDTO) {
         answerService.updateAnswer(answerDTO);
+    }
+
+    @PostMapping("/like/{id}")
+    public void addLikeToAnswer(@PathVariable int id) {
+        answerService.addLikeToAnswer(id);
+    }
+
+    @PostMapping("/dislike/{id}")
+    public void addDislikeToAnswer(@PathVariable int id) {
+        answerService.addDislikeToAnswer(id);
     }
 
     @GetMapping("/like/{id}")

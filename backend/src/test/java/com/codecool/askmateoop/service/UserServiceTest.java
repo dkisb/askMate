@@ -72,7 +72,7 @@ class UserServiceTest {
         verify(userRepository).save(captor.capture());
 
         UserEntity savedUser = captor.getValue();
-        assertEquals("testuser", savedUser.getUsername());
+        assertEquals("testUser", savedUser.getUsername());
         assertEquals("test@test.com", savedUser.getEmail());
         assertEquals("encodedPw", savedUser.getPassword());
         assertTrue(savedUser.getRoles().contains(Role.ROLE_USER));

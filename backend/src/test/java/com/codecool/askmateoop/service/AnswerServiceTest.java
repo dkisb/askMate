@@ -66,7 +66,6 @@ class AnswerServiceTest {
         Question question = new Question();
         question.setId(questionId);
         when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
-
         Answer answer1 = new Answer();
         Answer answer2 = new Answer();
         Answer answer3 = new Answer();
@@ -76,7 +75,7 @@ class AnswerServiceTest {
         answer1.setContent("Content1");
         answer2.setContent("Content2");
         answer3.setContent("Content3");
-
+      
         UserEntity user1 = new UserEntity(); user1.setUsername("author1");
         UserEntity user2 = new UserEntity(); user2.setUsername("author2");
         UserEntity user3 = new UserEntity(); user3.setUsername("author3");
@@ -110,7 +109,6 @@ class AnswerServiceTest {
                 new AnswerDTO(22, "Content2", ts, "author2", 2, 1, 4, 3),
                 new AnswerDTO(33, "Content3", ts, "author3", 3, 1, 6, 0)
         );
-
         assertEquals(expected, answerService.getAnswers(questionId));
     }
 
@@ -274,6 +272,73 @@ class AnswerServiceTest {
         answer.setId(answerId);
         answer.setDislikes(4);
         when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
+        when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
+
+        answerService.dislikeAnswer(answerId);
+
+        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(answerCaptor.capture());
+        Answer capturedAnswer = answerCaptor.getValue();
+        assertEquals(5, capturedAnswer.getDislikes());
+    }
+
+    @Test
+    void dislikeAnswerWithInvalidAnswerIdThenThrowNoSuchElementException() {
+        int answerId = 10;
+        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.dislikeAnswer(answerId));
+    }
+
+    @Test
+    void getDislikesWithValidAnswerIdThenGetDislikes() {
+        int answerId = 10;
+        Answer answer = new Answer();
+        answer.setId(answerId);
+        answer.setDislikes(5);
+        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
+        assertEquals(5, answerService.getDislikes(answerId));
+    }
+
+    @Test
+    void getDislikesWithInvalidAnswerIdThenThrowNoSuchElementException() {
+        int answerId = 10;
+        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.getDislikes(answerId));
+    }
+
+    @Test
+    void deleteAnswerWhenUserIsAuthorizedThenDeleteAnswer() {
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity currentUser = new UserEntity();
+        currentUser.setId(10);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(currentUser));
+        int answerId = 1;
+        Answer answer = new Answer();
+        answer.setId(answerId);
+        answer.setLikes(4);
+        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
+        assertEquals(4, answerService.getLikes(answerId));
+    }
+
+    @Test
+    void getLikesWithInvalidAnswerIdThenThrowNoSuchElementException() {
+        int answerId = 1;
+        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.getLikes(answerId));
+    }
+
+    @Test
+    void dislikeAnswerWithValidAnswerIdThenSaveAnswer() {
+        int answerId = 10;
+        Answer answer = new Answer();
+        answer.setId(answerId);
+        answer.setDislikes(4);
+        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
         when(answerRepository.save(Mockito.any(Answer.class))).thenAnswer(inv -> inv.getArgument(0));
 
         answerService.dislikeAnswer(answerId);
@@ -395,6 +460,7 @@ class AnswerServiceTest {
     void getAnswerWithValidAnswerIdThenGetAnswer() {
         int answerId = 4;
         UserEntity author = new UserEntity(); author.setUsername("Author");
+
         Answer answer = new Answer();
         answer.setId(answerId);
         answer.setContent("Content");
@@ -408,7 +474,6 @@ class AnswerServiceTest {
         answer.setLikes(3);
         answer.setDislikes(1);
         when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-
         AnswerDTO expected = new AnswerDTO(4, "Content", ts, "Author", 2, 1, 3, 1);
         assertEquals(expected, answerService.getAnswer(answerId));
     }
@@ -423,6 +488,7 @@ class AnswerServiceTest {
     @Test
     void addCommentOfCommentWithValidParentIdAndUserIdThenAddComment() {
         int parentId = 5;
+
         NewReplyDTO dto = new NewReplyDTO("New comment", 3, parentId);
 
         // Service uses current user, not dto.userId()
@@ -437,6 +503,7 @@ class AnswerServiceTest {
         when(answerRepository.findById(parentId)).thenReturn(Optional.of(parentAnswer));
 
         when(answerRepository.save(Mockito.any(Answer.class))).thenAnswer(inv -> inv.getArgument(0));
+
 
         answerService.addCommentOfComment(parentId, dto);
 
@@ -454,13 +521,13 @@ class AnswerServiceTest {
         String username = "ghost";
         setAuthenticatedUser(username);
         when(userRepository.findByUsername(username)).thenReturn(Optional.empty()); // trigger user-not-found
-
         assertThrows(NoSuchElementException.class, () -> answerService.addCommentOfComment(parentId, dto));
     }
 
     @Test
     void addCommentOfCommentWithInvalidParentIdThenThrowNoSuchElementException() {
         int parentId = 11;
+
         NewReplyDTO dto = new NewReplyDTO("New comment", 3, parentId);
 
         String username = "replier";
@@ -468,7 +535,6 @@ class AnswerServiceTest {
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(new UserEntity()));
 
         when(answerRepository.findById(parentId)).thenReturn(Optional.empty()); // trigger parent-not-found
-
         assertThrows(NoSuchElementException.class, () -> answerService.addCommentOfComment(parentId, dto));
     }
 }

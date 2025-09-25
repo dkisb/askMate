@@ -1,5 +1,4 @@
 package com.codecool.askmateoop;
-
 import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
 import com.codecool.askmateoop.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;

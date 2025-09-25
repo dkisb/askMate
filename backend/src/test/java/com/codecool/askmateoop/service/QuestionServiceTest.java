@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -80,7 +81,6 @@ class QuestionServiceTest {
                 new QuestionDTO(1, "Title1", null, question1.getCreatedAt(), "testUser"),
                 new QuestionDTO(2, "Title2", null, question2.getCreatedAt(), "testUser2")
         );
-
         assertEquals(expected, questionService.getAllQuestions());
     }
 
@@ -295,7 +295,88 @@ class QuestionServiceTest {
     void updateQuestionWithInvalidQuestionId() {
         UpdatedQuestionDTO dto = new UpdatedQuestionDTO(5, "New Title", "New Content");
         when(questionRepository.findById(dto.id())).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> questionService.updateQuestion(dto));
+        assertThrows(NoSuchElementException.class, () -> questionService.updateAnyQuestion(dto));
+    }
+
+    @Test
+    void likeQuestionWithValidQuestionId() {
+        int questionId = 1;
+        Question question = new Question();
+        question.setId(questionId);
+        question.setLikes(3);
+        when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
+
+        questionService.likeQuestion(questionId);
+
+        ArgumentCaptor<Question> captor = ArgumentCaptor.forClass(Question.class);
+        verify(questionRepository).save(captor.capture());
+        Question captured = captor.getValue();
+        assertEquals(4, captured.getLikes());
+    }
+
+    @Test
+    void likeQuestionWithInvalidQuestionId() {
+        int questionId = 1;
+        when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> questionService.likeQuestion(questionId));
+    }
+
+    @Test
+    void getLikesWithValidQuestionId() {
+        int questionId = 1;
+        Question question = new Question();
+        question.setId(questionId);
+        question.setLikes(3);
+        when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
+        assertEquals(3, questionService.getLikes(questionId));
+    }
+
+    @Test
+    void getLikesWithInvalidQuestionId() {
+        int questionId = 1;
+        when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> questionService.getLikes(questionId));
+    }
+
+    @Test
+    void dislikeQuestionWithValidQuestionId() {
+        int questionId = 1;
+        Question question = new Question();
+        question.setId(questionId);
+        question.setDislikes(4);
+        when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
+        when(questionRepository.save(any(Question.class))).thenReturn(question);
+
+        questionService.dislikeQuestion(questionId);
+
+        ArgumentCaptor<Question> captor = ArgumentCaptor.forClass(Question.class);
+        verify(questionRepository).save(captor.capture());
+        Question captured = captor.getValue();
+        assertEquals(5, captured.getDislikes());
+    }
+
+    @Test
+    void dislikeQuestionWithInvalidQuestionId() {
+        int questionId = 1;
+        when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> questionService.dislikeQuestion(questionId));
+    }
+
+    @Test
+    void getDislikesWithValidQuestionId() {
+        int questionId = 1;
+        Question question = new Question();
+        question.setId(questionId);
+        question.setDislikes(4);
+        when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
+        assertEquals(4, questionService.getDislikes(questionId));
+    }
+
+    @Test
+    void getDislikesWithInvalidQuestionId() {
+        int questionId = 1;
+        when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> questionService.getDislikes(questionId));
     }
 
     @Test
