@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Csak POM -> dependency cache
 COPY pom.xml .
-RUN mvn -B -q -e -DskipTests dependency:go-offline
+RUN mvn -B -q -e -Dmaven.test.skip=true package
 
 # Források
 COPY src ./src
