@@ -11,6 +11,7 @@ import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
 import com.codecool.askmateoop.model.payload.dto.user.PointsDTO;
 import com.codecool.askmateoop.repository.UserRepository;
 import com.codecool.askmateoop.security.jwt.JwtUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -22,9 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,22 +36,31 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+class UserServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
-    @Mock
-    private PasswordEncoder passwordEncoder;
-    @Mock
-    private AuthenticationManager authenticationManager;
-    @Mock
-    private JwtUtils jwtUtils;
+    @Mock private UserRepository userRepository;
+    @Mock private PasswordEncoder passwordEncoder;
+    @Mock private AuthenticationManager authenticationManager;
+    @Mock private JwtUtils jwtUtils;
 
-    @InjectMocks
-    private UserService userService;
+    @InjectMocks private UserService userService;
+
+    // ---------- helpers ----------
+    private void setAuthenticatedUser(String username, Set<SimpleGrantedAuthority> authorities) {
+        User principal = new User(username, "password", authorities);
+        var auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    @AfterEach
+    void clearSecurity() {
+        SecurityContextHolder.clearContext();
+    }
+
+    // ---------- tests ----------
 
     @Test
-    public void createUserWithValidCredentialsThenSaveUser() {
+    void createUserWithValidCredentialsThenSaveUser() {
         NewUserDTO dto = new NewUserDTO("testuser", "test@test.com", "123456");
         when(userRepository.existsByUsername(dto.username())).thenReturn(false);
         when(userRepository.existsByEmail(dto.email())).thenReturn(false);
@@ -71,7 +79,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void createUserWithUsernameAlreadyInUseThenThrowUserNameAlreadyInUseException() {
+    void createUserWithUsernameAlreadyInUseThenThrowUserNameAlreadyInUseException() {
         NewUserDTO dto = new NewUserDTO("testuser", "test@test.com", "123456");
         when(userRepository.existsByUsername(dto.username())).thenReturn(true);
 
@@ -79,24 +87,25 @@ public class UserServiceTest {
     }
 
     @Test
-    public void createUserWithEmailAlreadyExistsThenThrowsEmailAlreadyExistsException() {
+    void createUserWithEmailAlreadyExistsThenThrowsEmailAlreadyExistsException() {
         NewUserDTO dto = new NewUserDTO("testuser", "test@test.com", "123456");
         when(userRepository.existsByEmail(dto.email())).thenReturn(true);
 
         assertThrows(EmailAlreadyInUseException.class, () -> userService.createUser(dto));
     }
 
-
     @Test
     void loginUserWithValidCredentialsThenReturnJwtToken() {
         LoginRequestDTO loginRequest = new LoginRequestDTO("testuser", "password");
+
         User userDetails = new User(
                 "testuser",
                 "password",
                 Set.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
-        Authentication authentication =
+        var authentication =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
         when(jwtUtils.generateJwtToken(authentication)).thenReturn("fake-jwt-token");
@@ -105,6 +114,7 @@ public class UserServiceTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isInstanceOf(JwtResponse.class);
+
         JwtResponse jwtResponse = (JwtResponse) response.getBody();
         assertThat(jwtResponse.jwt()).isEqualTo("fake-jwt-token");
         assertThat(jwtResponse.username()).isEqualTo("testuser");
@@ -122,7 +132,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void getUserIdWhenUserExists() {
+    void getUserIdWhenUserExists() {
         UserEntity user = new UserEntity();
         user.setUsername("testuser");
         user.setId(1);
@@ -132,41 +142,36 @@ public class UserServiceTest {
     }
 
     @Test
-    public void getUserIdWhenUserDoesNotExistThenThrowsNoSuchUserException() {
-        UserEntity user = new UserEntity();
-        user.setUsername("testuser");
-        user.setId(1);
-        when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.empty());
-
+    void getUserIdWhenUserDoesNotExistThenThrowsNoSuchUserException() {
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> userService.getUserId("testuser"));
     }
 
     @Test
-    public void getReliabilityLevelWithValidUserIdThenReturnReliabilityLevel() {
+    void getReliabilityLevelWithValidUserIdThenReturnReliabilityLevel() {
         UserEntity userEntity = new UserEntity();
         userEntity.setReliabilityPoints(3);
         userEntity.setId(1);
         when(userRepository.findById(userEntity.getId())).thenReturn(Optional.of(userEntity));
+
         int result = userService.getReliabilityLevel(userEntity.getId());
 
         assertEquals(3, result);
     }
 
     @Test
-    public void getReliabilityLevelWithInvalidUserIdThenThrowsNoSuchElementException() {
-        UserEntity userEntity = new UserEntity();
-        userEntity.setReliabilityPoints(3);
-        userEntity.setId(1);
-        when(userRepository.findById(userEntity.getId())).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> userService.getReliabilityLevel(userEntity.getId()));
+    void getReliabilityLevelWithInvalidUserIdThenThrowsNoSuchElementException() {
+        when(userRepository.findById(1)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> userService.getReliabilityLevel(1));
     }
 
     @Test
-    public void addNewPointsWithValidUserId() {
+    void addNewPointsWithValidUserId() {
         PointsDTO dto = new PointsDTO(1, 5);
         UserEntity user = new UserEntity();
         user.setReliabilityPoints(3);
         when(userRepository.findById(dto.userId())).thenReturn(Optional.of(user));
+
         userService.addNewPoints(dto);
 
         verify(userRepository, times(1)).save(user);
@@ -174,7 +179,7 @@ public class UserServiceTest {
     }
 
     @Test
-    public void addNewPointsWithInvalidUserId() {
+    void addNewPointsWithInvalidUserId() {
         PointsDTO dto = new PointsDTO(1, 5);
         when(userRepository.findById(dto.userId())).thenReturn(Optional.empty());
 
@@ -183,17 +188,15 @@ public class UserServiceTest {
     }
 
     @Test
-    public void deleteUser_withValidUserId_deletesUser() {
-        User springUser = new User("testUser", "password", new HashSet<>());
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(springUser);
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
+    void deleteUser_withValidUserId_deletesUser() {
+        // service uses current authenticated user -> set it
+        String username = "testUser";
+        setAuthenticatedUser(username, Set.of(new SimpleGrantedAuthority("ROLE_USER")));
+
         UserEntity userEntity = new UserEntity();
         userEntity.setId(1);
-        userEntity.setUsername("testUser");
-        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(userEntity));
+        userEntity.setUsername(username);
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(userEntity));
 
         userService.deleteUser(1);
 
@@ -201,38 +204,31 @@ public class UserServiceTest {
     }
 
     @Test
-    public void deleteUser_withDifferentId_throwsNotAllowedException() {
-        User springUser = new User("testUser", "password", new ArrayList<>());
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(springUser);
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
+    void deleteUser_withDifferentId_throwsNotAllowedException() {
+        String username = "testUser";
+        setAuthenticatedUser(username, Set.of(new SimpleGrantedAuthority("ROLE_USER")));
+
         UserEntity userEntity = new UserEntity();
         userEntity.setId(1);
-        userEntity.setUsername("testUser");
-        when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(userEntity));
+        userEntity.setUsername(username);
+        when(userRepository.findByUsername(username)).thenReturn(Optional.of(userEntity));
 
         assertThrows(NotAllowedOperationException.class, () -> userService.deleteUser(2));
         verify(userRepository, never()).delete(any());
     }
 
     @Test
-    public void deleteUser_userNotFound_throwsNoSuchElementException() {
-        User springUser = new User("ghostUser", "password", new ArrayList<>());
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getPrincipal()).thenReturn(springUser);
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-        when(userRepository.findByUsername("ghostUser")).thenReturn(Optional.empty());
+    void deleteUser_userNotFound_throwsNoSuchElementException() {
+        String username = "ghostUser";
+        setAuthenticatedUser(username, Set.of(new SimpleGrantedAuthority("ROLE_USER")));
+        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
 
         assertThrows(NoSuchElementException.class, () -> userService.deleteUser(1));
         verify(userRepository, never()).delete(any());
     }
 
     @Test
-    public void makeUserModWithValidUserIdMakeAUserModerator() {
+    void makeUserModWithValidUserIdMakeAUserModerator() {
         UserEntity user = new UserEntity();
         user.setRoles(EnumSet.of(Role.ROLE_USER));
         user.setId(1);
@@ -241,21 +237,18 @@ public class UserServiceTest {
         userService.makeUserMod(user.getId());
 
         verify(userRepository, times(1)).save(user);
-        assertEquals(user.getRoles(), EnumSet.of(Role.ROLE_USER, Role.ROLE_MODERATOR));
+        assertEquals(EnumSet.of(Role.ROLE_USER, Role.ROLE_MODERATOR), user.getRoles());
     }
 
     @Test
-    public void makeUserModWithInvalidUserIdThrowsNoSuchElementException() {
-        UserEntity user = new UserEntity();
-        user.setRoles(EnumSet.of(Role.ROLE_USER));
-        user.setId(1);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> userService.makeUserMod(user.getId()));
+    void makeUserModWithInvalidUserIdThrowsNoSuchElementException() {
+        when(userRepository.findById(1)).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> userService.makeUserMod(1));
         verify(userRepository, never()).save(any(UserEntity.class));
     }
 
     @Test
-    public void makeModUserWithValidUserIdMakeModeratorUser() {
+    void makeModUserWithValidUserIdMakeModeratorUser() {
         UserEntity user = new UserEntity();
         user.setRoles(EnumSet.of(Role.ROLE_USER, Role.ROLE_MODERATOR));
         user.setId(1);
@@ -264,22 +257,19 @@ public class UserServiceTest {
         userService.makeModUser(user.getId());
 
         verify(userRepository, times(1)).save(user);
-        assertEquals(user.getRoles(), EnumSet.of(Role.ROLE_USER));
+        assertEquals(EnumSet.of(Role.ROLE_USER), user.getRoles());
     }
 
     @Test
-    public void makeModUserWithInvalidUserIdThrowsNoSuchElementException() {
-        UserEntity user = new UserEntity();
-        user.setRoles(EnumSet.of(Role.ROLE_USER, Role.ROLE_MODERATOR));
-        user.setId(1);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+    void makeModUserWithInvalidUserIdThrowsNoSuchElementException() {
+        when(userRepository.findById(1)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> userService.makeModUser(user.getId()));
+        assertThrows(NoSuchElementException.class, () -> userService.makeModUser(1));
         verify(userRepository, never()).save(any(UserEntity.class));
     }
 
     @Test
-    public void deleteAnyUserWithValidUserId_deletesUser() {
+    void deleteAnyUserWithValidUserId_deletesUser() {
         UserEntity user = new UserEntity();
         user.setId(1);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
@@ -290,12 +280,10 @@ public class UserServiceTest {
     }
 
     @Test
-    public void deleteAnyUserWithInvalidUserIdThrowsNoSuchElementException() {
-        UserEntity user = new UserEntity();
-        user.setId(1);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+    void deleteAnyUserWithInvalidUserIdThrowsNoSuchElementException() {
+        when(userRepository.findById(1)).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> userService.deleteAnyUser(user.getId()));
+        assertThrows(NoSuchElementException.class, () -> userService.deleteAnyUser(1));
         verify(userRepository, never()).delete(any(UserEntity.class));
     }
 }

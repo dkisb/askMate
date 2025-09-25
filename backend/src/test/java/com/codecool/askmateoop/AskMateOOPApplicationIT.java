@@ -1,8 +1,5 @@
 package com.codecool.askmateoop;
 
-import com.codecool.askmateoop.errorhandler.custom_exceptions.UsernameAlreadyExistsException;
-import com.codecool.askmateoop.model.entities.Question;
-import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
 import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
 import com.codecool.askmateoop.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,6 +67,4 @@ class AskMateOOPApplicationIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(newUserDTO2)))
                         .andExpect(status().isConflict());
-    }
-
-}
+    }}
