@@ -1,0 +1,41 @@
+volumes:
+  db_data:
+
+services:
+  db:
+    image: postgres:17
+    container_name: my_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: ./backend
+    container_name: askmate_app
+    restart: on-failure
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      DATABASE_USERNAME: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      ASK_MATE_APP_JWTSECRET: ${JWT_SECRET}
+      ASK_MATE_APP_JWTEXPIRATIONMS: ${JWT_EXPIRATION_MS}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend 
+    container_name: askmate_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
