@@ -7,11 +7,30 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [password, setPassword] = useState(null);
+  const [newPassword, setNewPassword] = useState(null);
+  const [confirmPassword, setConfirmPassword] = useState(null);
 
   useEffect(() => {
     setUserName(user?.userName || '');
-    setEmail(user?.email || '');
+    fetchEmail();
   }, [user]);
+
+  async function fetchEmail() {
+    const response = await fetch('/api/user/email', {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(localStorage.getItem('jwtToken') ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}),
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setEmail(data.email || '');
+    } else {
+      setEmail('');
+    } 
+    
+  }
 
   async function handleSave(e) {
     e.preventDefault();
@@ -25,7 +44,7 @@ export default function ProfilePage() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: 'Bearer ' + token } : {}),
         },
-        body: JSON.stringify({ userName, email }),
+        body: JSON.stringify({ userName, email, password, newPassword: (newPassword && newPassword === confirmPassword) ? newPassword : "" }),
       });
       if (!res.ok) throw new Error('Failed to save profile');
       setMessage('Profile updated');
@@ -41,7 +60,7 @@ export default function ProfilePage() {
       <h1 className="text-2xl font-bold mb-4">Your Profile</h1>
       <form onSubmit={handleSave} className="space-y-4 max-w-md">
         <div>
-          <label className="block text-sm font-medium mb-1">Username</label>
+          <label className="block text-sm font-medium mb-1">Username*:</label>
           <input
             type="text"
             className="w-full p-2.5 rounded-lg border"
@@ -50,13 +69,43 @@ export default function ProfilePage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
+          <label className="block text-sm font-medium mb-1">Email*:</label>
           <input
             type="email"
             className="w-full p-2.5 rounded-lg border"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Password*:</label>
+          <input
+            type="password"
+            className="w-full p-2.5 rounded-lg border"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">New password:</label>
+          <input
+            type="password"
+            className="w-full p-2.5 rounded-lg border"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">New password again:</label>
+          <input
+            type="password"
+            className="w-full p-2.5 rounded-lg border"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </div>
+        <div>
+          {newPassword !== confirmPassword && <div className="text-red-600 text-sm">New passwords do not match</div>}
         </div>
         <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg px-4" disabled={saving}>
           {saving ? 'Saving…' : 'Save'}

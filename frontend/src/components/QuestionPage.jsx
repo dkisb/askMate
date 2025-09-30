@@ -124,7 +124,7 @@ export default function QuestionPage() {
     loadComments();
     return () => { isCancelled = true; };
   }, [id]);
-
+/*
   // lightweight poll (optional)
   useEffect(() => {
     if (!id) return;
@@ -148,7 +148,7 @@ export default function QuestionPage() {
     }, 5000);
     return () => clearInterval(timer);
   }, [id]);
-
+*/
   function refreshAllComments() {
     // reuse the loader
     (async () => {
