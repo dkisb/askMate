@@ -150,16 +150,23 @@ export const createQuestion = async (title, content, userId) => {
 export async function likeQuestion(questionId) {
   const res = await fetch(`/api/question/like/${questionId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to like question: ${res.status}`);
-  return true;
+  const data = await res.json();
+  return data;
 }
 export async function dislikeQuestion(questionId) {
   const res = await fetch(`/api/question/dislike/${questionId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to dislike question: ${res.status}`);
-  return true;
+  const data = await res.json();
+  return data;
 }
 export async function fetchQuestionLikesCount(questionId) {
   const res = await fetch(`/api/question/like/${questionId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to fetch question likes: ${res.status}`);
+  return await res.json();
+}
+export async function fetchQuestionDislikesCount(questionId) {
+  const res = await fetch(`/api/question/dislike/${questionId}`, { headers: { ...getAuthHeader() } });
+  if (!res.ok) throw new Error(`Failed to fetch question dislikes: ${res.status}`);
   return await res.json();
 }
 

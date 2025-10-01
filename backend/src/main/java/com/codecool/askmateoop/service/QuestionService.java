@@ -133,7 +133,7 @@ public class QuestionService {
 
     }
 
-    public void addLikeToQuestion(int id) {
+    public boolean addLikeToQuestion(int id) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UserEntity reviewer = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
@@ -144,6 +144,7 @@ public class QuestionService {
             questionLikeRepository.deleteByQuestionIdAndReviewer(id, reviewer);
             question.setLikes(question.getLikes() - 1);
             questionRepository.save(question);
+            return false;
         } else {
             QuestionLike like = new QuestionLike();
             like.setQuestionId(id);
@@ -151,10 +152,11 @@ public class QuestionService {
             questionLikeRepository.save(like);
             question.setLikes(question.getLikes() + 1);
             questionRepository.save(question);
+            return true;
         }
     }
 
-    public void addDislikeToQuestion(int id) {
+    public boolean addDislikeToQuestion(int id) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UserEntity reviewer = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         Question question = questionRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Question not found with id " + id));
@@ -164,6 +166,8 @@ public class QuestionService {
         if (questionDislikeRepository.existsByQuestionIdAndReviewer(id, reviewer)) {
             questionDislikeRepository.deleteByQuestionIdAndReviewer(id, reviewer);
             question.setDislikes(question.getDislikes() - 1);
+            questionRepository.save(question);
+            return false;
         } else {
             QuestionDislike dislike = new QuestionDislike();
             dislike.setQuestionId(id);
@@ -171,6 +175,19 @@ public class QuestionService {
             questionDislikeRepository.save(dislike);
             question.setDislikes(question.getDislikes() + 1);
             questionRepository.save(question);
+            return true;
         }
+    }
+
+    public boolean alreadyLiked(int questionId) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity userEntity = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        return questionLikeRepository.existsByQuestionIdAndReviewer(questionId, userEntity);
+    }
+
+    public boolean alreadyDisliked(int questionId) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity userEntity = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        return questionDislikeRepository.existsByQuestionIdAndReviewer(questionId, userEntity);
     }
 }

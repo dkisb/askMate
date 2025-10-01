@@ -11,6 +11,7 @@ import {
   likeAnswer,
   dislikeAnswer,
   fetchQuestionLikesCount,
+  fetchQuestionDislikesCount,
   fetchAnswerLikesCount,
   fetchAnswerDislikesCount,
 } from '../utils/api.js';
@@ -29,9 +30,8 @@ export default function QuestionPage() {
   const [commentReactions, setCommentReactions] = useState({});
   const [pending, setPending] = useState({ post: false, comments: {} });
   const [likeCounts, setLikeCounts] = useState({ question: 0, comments: {} });
-  const [dislikeCounts, setDislikeCounts] = useState({ comments: {} });
+  const [dislikeCounts, setDislikeCounts] = useState({ question: 0, comments: {} });
   const [isQuestionExpanded, setIsQuestionExpanded] = useState(false);
-
   const location = useLocation();
   const navigate = useNavigate();
   const fromState = location.state || {};
@@ -61,10 +61,24 @@ export default function QuestionPage() {
       setLoading(true);
       try {
         const data = await fetchQuestion(id);
-        const count = await fetchQuestionLikesCount(id);
+        const likesNumber = await fetchQuestionLikesCount(id);
+        const dislikesNumber = await fetchQuestionDislikesCount(id);
+        const likeResponse = await fetch(`/api/question/like/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+        if (likeResponse.ok) {
+          const liked = await likeResponse.json();
+          if (liked === true) setPostReaction('like');
+          else {
+            const dislikeResponse = await fetch(`/api/question/dislike/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            if (dislikeResponse.ok) {
+              const disliked = await dislikeResponse.json();
+              if (disliked === true) setPostReaction('dislike');
+            }
+          }
+        } else { console.error('Failed to fetch user review status'); }
         if (!isCancelled) {
           setQuestion(data);
-          setLikeCounts((prev) => ({ ...prev, question: Number(count) || 0 }));
+          setLikeCounts((prev) => ({ ...prev, question: Number(likesNumber) || 0 }));
+          setDislikeCounts((prev) => ({ ...prev, question: Number(dislikesNumber) || 0 }));
         }
       } finally {
         if (!isCancelled) setLoading(false);
@@ -124,31 +138,7 @@ export default function QuestionPage() {
     loadComments();
     return () => { isCancelled = true; };
   }, [id]);
-/*
-  // lightweight poll (optional)
-  useEffect(() => {
-    if (!id) return;
-    const timer = setInterval(async () => {
-      try {
-        const flat = await fetchComments(id);
-        const byParent = {};
-        for (const a of flat) {
-          const pid = a.parentId ?? null;
-          if (!byParent[pid]) byParent[pid] = [];
-          byParent[pid].push(a);
-        }
-        Object.values(byParent).forEach(arr =>
-          arr.sort((a, b) => new Date(b.created || b.createdAt) - new Date(a.created || a.createdAt))
-        );
-        setComments(byParent[null] || []);
-        setChildrenByParent(byParent);
-      } catch(e) {
-        console.error('Error polling comments:', e);
-      }
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [id]);
-*/
+
   function refreshAllComments() {
     // reuse the loader
     (async () => {
@@ -191,26 +181,6 @@ export default function QuestionPage() {
   };
 
   const sortedComments = comments; // already sorted desc
-
-  async function togglePostReaction(reaction) {
-    if (pending.post) return;
-    const current = postReaction;
-    if (current === null) {
-      try {
-        setPending((p) => ({ ...p, post: true }));
-        if (reaction === 'like') { await likeQuestion(id); setPostReaction('like'); }
-        else { await dislikeQuestion(id); setPostReaction('dislike'); }
-        const refreshed = await fetchQuestionLikesCount(id);
-        setLikeCounts((prev) => ({ ...prev, question: Number(refreshed) || 0 }));
-      } catch (err) {
-        console.error('Failed to react on question:', err);
-      } finally {
-        setPending((p) => ({ ...p, post: false }));
-      }
-      return;
-    }
-    setPostReaction(current === reaction ? null : reaction);
-  }
 
   async function toggleCommentReaction(commentId, reaction) {
     if (!commentId) return;
@@ -261,6 +231,30 @@ export default function QuestionPage() {
   }
   function handleShareQuestion() { handleShareLink(window.location.href); }
 
+  async function handleLikeClick(questionId) {
+    const data = await likeQuestion(questionId);
+    if (data === true) setPostReaction('like');
+    else if (data === false) setPostReaction(null);
+    try {
+      const refreshed = await fetchQuestionLikesCount(questionId);
+      setLikeCounts((prev) => ({ ...prev, 'question': Number(refreshed) || 0 }));
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleDislikeClick(questionId) {
+    const data = await dislikeQuestion(questionId);
+    if (data === true) setPostReaction('dislike');
+    else if (data === false) setPostReaction(null);
+    try {
+      const refreshed = await fetchQuestionDislikesCount(questionId);
+      setDislikeCounts((prev) => ({ ...prev, 'question': Number(refreshed) || 0 }));
+    } catch {
+      // ignore
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">{
@@ -288,15 +282,17 @@ export default function QuestionPage() {
             </button>
           )}
           {/* time shown in header; removed duplicate here */}
-          <div className="text-xs text-gray-600 mt-1">{likeCounts.question} upvotes</div>
+          <div className="text-xs text-gray-600 mt-1">{likeCounts.question} upvotes {dislikeCounts.question} downvotes</div>
 
           <div className="mt-2 flex items-center gap-2">
             <button type="button" className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${postReaction === 'like' ? 'text-blue-600' : ''}`}
-              onClick={() => togglePostReaction('like')} disabled={pending.post} aria-pressed={postReaction === 'like'} aria-label="Upvote post">
+              onClick={() => handleLikeClick(id)} 
+              disabled={pending.post} aria-pressed={postReaction === 'like'} aria-label="Upvote post">
               <ArrowBigUp size={16} />
             </button>
             <button type="button" className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${postReaction === 'dislike' ? 'text-red-600' : ''}`}
-              onClick={() => togglePostReaction('dislike')} disabled={pending.post} aria-pressed={postReaction === 'dislike'} aria-label="Downvote post">
+              onClick={() => handleDislikeClick(id)} 
+              disabled={pending.post} aria-pressed={postReaction === 'dislike'} aria-label="Downvote post">
               <ArrowBigDown size={16} />
             </button>
             <button type="button" className="btn btn-ghost btn-xs inline-flex items-center gap-1" onClick={handleShareQuestion} aria-label="Share post">

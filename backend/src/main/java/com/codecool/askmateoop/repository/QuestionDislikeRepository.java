@@ -11,4 +11,5 @@ public interface QuestionDislikeRepository extends JpaRepository<QuestionDislike
     boolean existsByQuestionIdAndReviewer(Integer questionId, UserEntity reviewer);
     @Transactional
     void deleteByQuestionIdAndReviewer(Integer questionId, UserEntity reviewer);
+    boolean existsByQuestionIdAndReviewer(int questionId, UserEntity reviewer);
 }

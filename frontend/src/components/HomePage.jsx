@@ -12,7 +12,7 @@ import SpeedDial from '@mui/material/SpeedDial';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
 import AddIcon from '@mui/icons-material/Add';
-import { fetchAllQuestions, createQuestion, addPoints, likeQuestion, dislikeQuestion, fetchQuestionLikesCount, fetchComments } from '../utils/api.js';
+import { fetchAllQuestions, createQuestion, addPoints, likeQuestion, dislikeQuestion, fetchQuestionLikesCount, fetchQuestionDislikesCount, fetchComments } from '../utils/api.js';
 
 export default function HomePage() {
   const [questions, setQuestions] = useState([]);
@@ -21,21 +21,14 @@ export default function HomePage() {
   const [questionContent, setQuestionContent] = useState('');
   const [showForm, setShowForm] = useState(false);
   const contentRef = useRef(null);
-  const [userReactions, setUserReactions] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('askmate_home_q_react') || '{}');
-    } catch {
-      return {};
-    }
-  });
-  const [pending, setPending] = useState({});
   const [likesByQuestionId, setLikesByQuestionId] = useState({});
+  const [dislikesByQuestionId, setDislikesByQuestionId] = useState({});
   const [commentsCountByQuestionId, setCommentsCountByQuestionId] = useState({});
-
   const location = useLocation();
   const fromState = location.state || {};
   const [currentUserName, setCurrentUserName] = useState(fromState.userName ?? null);
   const [currentUserId, setCurrentUserId] = useState(fromState.userId ?? null);
+  const [userReviews, setUserReviews] = useState({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,15 +40,41 @@ export default function HomePage() {
       const entries = await Promise.all(
         list.map(async (q) => {
           try {
-            const count = await fetchQuestionLikesCount(q.id);
-            return [q.id, Number(count) || 0];
+            const likesCount = await fetchQuestionLikesCount(q.id);
+            const dislikesCount = await fetchQuestionDislikesCount(q.id);
+            const likeResponse = await fetch(`/api/question/like/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            const dislikeResponse = await fetch(`/api/question/dislike/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            if (likeResponse.ok) {
+              const data = await likeResponse.json();
+              if (data === true) {
+                setUserReviews((prev) => ({ ...prev, [q.id]: {'like': true, 'dislike': false} }));
+              } else if (data === false) {
+                setUserReviews((prev) => ({ ...prev, [q.id]: {'like': false, 'dislike': false} }));
+              }
+            }
+            if (dislikeResponse.ok) {
+              const data = await dislikeResponse.json();
+              if (data === true) {
+                setUserReviews((prev) => ({ ...prev, [q.id]: {...prev[q.id], 'dislike': true} }));
+              } else if (data === false) {
+                setUserReviews((prev) => ({ ...prev, [q.id]: {...prev[q.id], 'dislike': false} }));
+              }
+            }
+            return [q.id, Number(likesCount) || 0, Number(dislikesCount) || 0];
           } catch {
-            return [q.id, 0];
+            setUserReviews((prev) => ({ ...prev, [q.id]: {'like': false} }));
+            return [q.id, 0, 0];
           }
         })
       );
-      const map = Object.fromEntries(entries);
-      setLikesByQuestionId(map);
+      const likesMap = {};
+      const dislikesMap = {};
+      entries.forEach(([id, likes, dislikes]) => {
+        likesMap[id] = likes;
+        dislikesMap[id] = dislikes;
+      });
+      setLikesByQuestionId(likesMap);
+      setDislikesByQuestionId(dislikesMap);
 
       // Fetch comments count for all questions
       const commentEntries = await Promise.all(
@@ -79,7 +98,7 @@ export default function HomePage() {
   useEffect(() => {
     fetchData();
   }, []);
-
+/*
   useEffect(() => {
     try {
       localStorage.setItem('askmate_home_q_react', JSON.stringify(userReactions));
@@ -88,6 +107,7 @@ export default function HomePage() {
     }
   }, [userReactions]);
 
+  */
   // Auto-resize the question content textarea based on input length
   useEffect(() => {
     if (contentRef.current) {
@@ -126,8 +146,6 @@ export default function HomePage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log('Title:', questionTitle);
-    console.log('Content:', questionContent);
     try {
       if (!currentUserId) {
         alert('You are not logged in. Please log in again.');
@@ -153,44 +171,25 @@ export default function HomePage() {
     (a, b) => new Date(b.created || b.createdAt) - new Date(a.created || a.createdAt)
   );
 
-  async function toggleQuestionReaction(questionId, reaction) {
-    const current = userReactions[questionId] || null;
-    if (pending[questionId]) return;
-    // First-time reaction: call backend once
-    if (current === null) {
-      try {
-        setPending((prev) => ({ ...prev, [questionId]: true }));
-        if (reaction === 'like') {
-          await likeQuestion(questionId);
-          setUserReactions((prev) => ({ ...prev, [questionId]: 'like' }));
-        } else if (reaction === 'dislike') {
-          await dislikeQuestion(questionId);
-          setUserReactions((prev) => ({ ...prev, [questionId]: 'dislike' }));
-        }
-        try {
-          const refreshed = await fetchQuestionLikesCount(questionId);
-          setLikesByQuestionId((prev) => ({ ...prev, [questionId]: Number(refreshed) || 0 }));
-        } catch {
-          // ignore
-        }
-      } catch (err) {
-        console.error('Failed to react to question:', err);
-      } finally {
-        setPending((prev) => {
-          const copy = { ...prev };
-          delete copy[questionId];
-          return copy;
-        });
-      }
-      return;
+  async function handleLikeClick(questionId) {
+    const data = await likeQuestion(questionId);
+    setUserReviews((prev) => ({ ...prev, [questionId]: {'like': data} }));
+    try {
+      const refreshed = await fetchQuestionLikesCount(questionId);
+      setLikesByQuestionId((prev) => ({ ...prev, [questionId]: Number(refreshed) || 0 }));
+    } catch {
+      // ignore
     }
-    // Toggle or switch locally without backend increments
-    if (current === reaction) {
-      // Unreact
-      setUserReactions((prev) => ({ ...prev, [questionId]: null }));
-    } else {
-      // Switch dislike<->like
-      setUserReactions((prev) => ({ ...prev, [questionId]: reaction }));
+  }
+
+  async function handleDislikeClick(questionId) {
+    const data = await dislikeQuestion(questionId);
+    setUserReviews((prev) => ({ ...prev, [questionId]: {'dislike': data} }));
+    try {
+      const refreshed = await fetchQuestionDislikesCount(questionId);
+      setDislikesByQuestionId((prev) => ({ ...prev, [questionId]: Number(refreshed) || 0 }));
+    } catch {
+      // ignore
     }
   }
 
@@ -283,10 +282,11 @@ export default function HomePage() {
             loading={loading}
             questions={sortedQuestions}
             likesByQuestionId={likesByQuestionId}
+            dislikesByQuestionId={dislikesByQuestionId}
             commentsCountByQuestionId={commentsCountByQuestionId}
-            userReactions={userReactions}
-            pending={pending}
-            onToggleReaction={toggleQuestionReaction}
+            onLikeClick={handleLikeClick}
+            onDislikeClick={handleDislikeClick}
+            userReviews={userReviews}
             onShareQuestion={handleShareQuestion}
             currentUserName={currentUserName}
             currentUserId={currentUserId}
