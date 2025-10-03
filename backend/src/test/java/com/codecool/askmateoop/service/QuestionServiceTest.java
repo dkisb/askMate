@@ -281,28 +281,6 @@ public class QuestionServiceTest {
         assertThrows(NoSuchElementException.class, () -> questionService.updateAnyQuestion(dto));
     }
 
-    @Test
-    void likeQuestionWithValidQuestionId() {
-        int questionId = 1;
-        Question question = new Question();
-        question.setId(questionId);
-        question.setLikes(3);
-        when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
-
-        questionService.likeQuestion(questionId);
-
-        ArgumentCaptor<Question> captor = ArgumentCaptor.forClass(Question.class);
-        verify(questionRepository).save(captor.capture());
-        Question captured = captor.getValue();
-        assertEquals(4, captured.getLikes());
-    }
-
-    @Test
-    void likeQuestionWithInvalidQuestionId() {
-        int questionId = 1;
-        when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> questionService.likeQuestion(questionId));
-    }
 
     @Test
     void getLikesWithValidQuestionId() {
@@ -319,30 +297,6 @@ public class QuestionServiceTest {
         int questionId = 1;
         when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> questionService.getLikes(questionId));
-    }
-
-    @Test
-    void dislikeQuestionWithValidQuestionId() {
-        int questionId = 1;
-        Question question = new Question();
-        question.setId(questionId);
-        question.setDislikes(4);
-        when(questionRepository.findById(questionId)).thenReturn(Optional.of(question));
-        when(questionRepository.save(any(Question.class))).thenReturn(question);
-
-        questionService.dislikeQuestion(questionId);
-
-        ArgumentCaptor<Question> captor = ArgumentCaptor.forClass(Question.class);
-        verify(questionRepository).save(captor.capture());
-        Question captured = captor.getValue();
-        assertEquals(5, captured.getDislikes());
-    }
-
-    @Test
-    void dislikeQuestionWithInvalidQuestionId() {
-        int questionId = 1;
-        when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> questionService.dislikeQuestion(questionId));
     }
 
     @Test

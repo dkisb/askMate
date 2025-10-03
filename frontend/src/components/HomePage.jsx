@@ -55,9 +55,9 @@ export default function HomePage() {
             if (dislikeResponse.ok) {
               const data = await dislikeResponse.json();
               if (data === true) {
-                setUserReviews((prev) => ({ ...prev, [q.id]: {...prev[q.id], 'dislike': true} }));
+                setUserReviews((prev) => ({ ...prev, [q.id]: {...(prev[q.id] || {}), 'dislike': true} }));
               } else if (data === false) {
-                setUserReviews((prev) => ({ ...prev, [q.id]: {...prev[q.id], 'dislike': false} }));
+                setUserReviews((prev) => ({ ...prev, [q.id]: {...(prev[q.id] || {}), 'dislike': false} }));
               }
             }
             return [q.id, Number(likesCount) || 0, Number(dislikesCount) || 0];

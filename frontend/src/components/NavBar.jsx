@@ -60,6 +60,8 @@ export default function PrimarySearchAppBar() {
   const navigate = useNavigate();
   const { user, setUser, logout } = useUser();
 
+  console.log('anchorEl:', anchorEl);
+
   const isMenuOpen = Boolean(anchorEl);
 
   const handleSearchKeyDown = (event) => {
@@ -82,6 +84,11 @@ export default function PrimarySearchAppBar() {
     handleMenuClose();
     navigate('/profile');
   };
+
+  const handleGoToMyQuestions = () => {
+    handleMenuClose();
+    navigate('/my-questions');
+  }
 
   const handleLogout = () => {
     try {
@@ -136,8 +143,11 @@ export default function PrimarySearchAppBar() {
           >
             AskMate
           </Typography>
-
           <Button color="inherit" component={Link} to="/profile" sx={{ mr: 2 }}>
+            My profile
+          </Button>
+
+          <Button color="inherit" component={Link} to="/myquestions" sx={{ mr: 2 }}>
             My Questions
           </Button>
 
@@ -188,6 +198,7 @@ export default function PrimarySearchAppBar() {
       >
         <MenuItem onClick={handleGoToProfile}>Profile</MenuItem>
         <MenuItem onClick={handleLogout}>Logout</MenuItem>
+        <MenuItem onClick={handleGoToMyQuestions}>My Questions</MenuItem>
       </Menu>
     </Box>
   );

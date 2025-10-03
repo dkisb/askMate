@@ -6,15 +6,17 @@ import { postCommentReply } from '../utils/api.js';
 export default function CommentNode({
   comment,
   questionId,
-  childrenByParent,      // <- new
+  childrenByParent,
   likeCountsComments,
   dislikeCountsComments,
+  onLikeAnswerClick,
+  onDislikeAnswerClick,
   commentReactions,
-  pendingComments,
   onToggleReaction,
+  pendingComments,
   onShareComment,
-  onReplyPosted,         // <- new callback
-  currentUserId,         // <- for NewReplyDTO
+  onReplyPosted,
+  currentUserId,
 }) {
   const commentId = comment.id;
   const [replyOpen, setReplyOpen] = useState(false);
@@ -40,7 +42,7 @@ export default function CommentNode({
       await postCommentReply(commentId, currentUserId, text);
       setReplyText('');
       setReplyOpen(false);
-      onReplyPosted?.(commentId);
+      onReplyPosted();
     } catch (error) {
       console.error('Error posting reply:', error);
       alert('Failed to post reply. Please try again.');
@@ -69,13 +71,13 @@ export default function CommentNode({
           {isContentExpanded ? 'Show less' : 'Read more'}
         </button>
       )}
-      <div className="text-[11px] text-gray-600 mt-1">{(likeCountsComments[commentId] ?? 0)} upvotes</div>
+      <div className="text-[11px] text-gray-600 mt-1">{(likeCountsComments[commentId] ?? 0)} upvotes {(dislikeCountsComments[commentId] ?? 0)} downvotes</div>
 
       <div className="mt-2 flex items-center gap-2">
         <button
           type="button"
           className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${commentReactions[commentId] === 'like' ? 'text-blue-600' : ''}`}
-          onClick={() => onToggleReaction(commentId, 'like')}
+          onClick={() => onLikeAnswerClick(commentId)}
           disabled={!!pendingComments[commentId]}
           aria-pressed={commentReactions[commentId] === 'like'}
           aria-label="Upvote comment"
@@ -85,7 +87,7 @@ export default function CommentNode({
         <button
           type="button"
           className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${commentReactions[commentId] === 'dislike' ? 'text-red-600' : ''}`}
-          onClick={() => onToggleReaction(commentId, 'dislike')}
+          onClick={() => onDislikeAnswerClick(commentId)}
           disabled={!!pendingComments[commentId]}
           aria-pressed={commentReactions[commentId] === 'dislike'}
           aria-label="Downvote comment"
@@ -157,12 +159,14 @@ export default function CommentNode({
               childrenByParent={childrenByParent}
               likeCountsComments={likeCountsComments}
               dislikeCountsComments={dislikeCountsComments}
+              onLikeAnswerClick={onLikeAnswerClick}
+              onDislikeAnswerClick={onDislikeAnswerClick}
               commentReactions={commentReactions}
               pendingComments={pendingComments}
-              onToggleReaction={onToggleReaction}
               onShareComment={onShareComment}
               onReplyPosted={onReplyPosted}
               currentUserId={currentUserId}
+              onToggleReaction={onToggleReaction}
             />
           ))}
         </div>

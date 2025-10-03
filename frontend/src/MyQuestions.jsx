@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import React from "react";
 
 function MyQuestions() {
     const [questions, setQuestions] = useState([]);
@@ -28,8 +29,8 @@ function MyQuestions() {
     return (
         <div>
             <h1>My Questions Page</h1>
-            {questions ? (questions.map(q => 
-            <><h2>{q.title}</h2><p>{q.content}</p>{q.created}</>)) : ("Loading...")}
+            {questions ? (questions.map((q, index) => 
+            <React.Fragment key={index}><h2>{q.title}</h2><p>{q.content}</p>{q.created}</React.Fragment>)) : ("Loading...")}
         </div>
     );
 }

@@ -74,21 +74,9 @@ public class AnswerService {
         answerRepository.save(answer);
     }
 
-    public void likeAnswer(int id){
-        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
-        answer.setLikes(answer.getLikes() + 1);
-        answerRepository.save(answer);
-    }
-
     public int getLikes(int id){
         Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
         return answer.getLikes();
-    }
-
-    public void dislikeAnswer(int id){
-        Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
-        answer.setDislikes(answer.getDislikes() + 1);
-        answerRepository.save(answer);
     }
 
     public int getDislikes(int id){
@@ -142,7 +130,7 @@ public class AnswerService {
         answerRepository.save(answer);
     }
 
-    public void addLikeToAnswer(int id) {
+    public boolean addLikeToAnswer(int id) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UserEntity reviewer = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
@@ -153,6 +141,8 @@ public class AnswerService {
             answerLikeRepository.deleteByAnswerIdAndReviewer(id, reviewer);
             answer.setLikes(answer.getLikes() - 1);
             answerRepository.save(answer);
+            return false;
+
         }
         AnswerLike like = new AnswerLike();
         like.setAnswerId(id);
@@ -160,9 +150,10 @@ public class AnswerService {
         answerLikeRepository.save(like);
         answer.setLikes(answer.getLikes() + 1);
         answerRepository.save(answer);
+        return true;
     }
 
-    public void addDislikeToAnswer(int id) {
+    public boolean addDislikeToAnswer(int id) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UserEntity reviewer = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         Answer answer = answerRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + id));
@@ -173,6 +164,7 @@ public class AnswerService {
             answerDislikeRepository.deleteByAnswerIdAndReviewer(id, reviewer);
             answer.setDislikes(answer.getDislikes() - 1);
             answerRepository.save(answer);
+            return false;
         }
         AnswerDislike dislike = new AnswerDislike();
         dislike.setAnswerId(id);
@@ -180,5 +172,18 @@ public class AnswerService {
         answerDislikeRepository.save(dislike);
         answer.setDislikes(answer.getDislikes() + 1);
         answerRepository.save(answer);
+        return true;
+    }
+
+    public boolean alreadyLiked(int answerId) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity userEntity = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        return answerLikeRepository.existsByAnswerIdAndReviewer(answerId, userEntity);
+    }
+
+    public boolean alreadyDisliked(int answerId) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity userEntity = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        return answerDislikeRepository.existsByAnswerIdAndReviewer(answerId, userEntity);
     }
 }

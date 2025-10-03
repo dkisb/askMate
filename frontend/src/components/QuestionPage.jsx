@@ -14,6 +14,8 @@ import {
   fetchQuestionDislikesCount,
   fetchAnswerLikesCount,
   fetchAnswerDislikesCount,
+  alreadyLikedAnswer,
+  alreadyDislikedAnswer,
 } from '../utils/api.js';
 import { formatRelativeTime } from '../utils/transformDate.jsx';
 import CommentNode from './CommentNode.jsx';
@@ -29,13 +31,21 @@ export default function QuestionPage() {
   const [postReaction, setPostReaction] = useState(null);
   const [commentReactions, setCommentReactions] = useState({});
   const [pending, setPending] = useState({ post: false, comments: {} });
-  const [likeCounts, setLikeCounts] = useState({ question: 0, comments: {} });
-  const [dislikeCounts, setDislikeCounts] = useState({ question: 0, comments: {} });
+  const [questionLikeCounts, setQuestionLikeCounts] = useState(0);
+  const [questionDislikeCounts, setQuestionDislikeCounts] = useState(0);
+  const [answerLikeCounts, setAnswerLikeCounts] = useState({'comments': {}});
+  const [answerDislikeCounts, setAnswerDislikeCounts] = useState({'comments': {}});
   const [isQuestionExpanded, setIsQuestionExpanded] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const fromState = location.state || {};
   const [currentUserId, setCurrentUserId] = useState(fromState.userId || null);
+
+  console.log("commentReactions:", commentReactions);
+  //console.log('answerlikecounts', answerLikeCounts)
+  //console.log('questionlikecounts', questionLikeCounts)
+  //console.log('questiondislikecounts', questionDislikeCounts)
+
 
   useEffect(() => {
     async function ensureUser() {
@@ -77,8 +87,8 @@ export default function QuestionPage() {
         } else { console.error('Failed to fetch user review status'); }
         if (!isCancelled) {
           setQuestion(data);
-          setLikeCounts((prev) => ({ ...prev, question: Number(likesNumber) || 0 }));
-          setDislikeCounts((prev) => ({ ...prev, question: Number(dislikesNumber) || 0 }));
+          setQuestionLikeCounts(Number(likesNumber) || 0);
+          setQuestionDislikeCounts(Number(dislikesNumber) || 0);
         }
       } finally {
         if (!isCancelled) setLoading(false);
@@ -96,7 +106,6 @@ export default function QuestionPage() {
       try {
         const flat = await fetchComments(id);
         if (isCancelled) return;
-
         const byParent = {};
         for (const a of flat) {
           const pid = a.parentId ?? null;
@@ -108,29 +117,46 @@ export default function QuestionPage() {
           arr.sort((a, b) => new Date(b.created || b.createdAt) - new Date(a.created || a.createdAt))
         );
 
+        const newLikedComments = {};
+        const newDislikedComments = {};
+        const reactions = {};
+        const promises = [];
+
+        for (const key in byParent) {
+          for (const comment of byParent[key]) {
+            newLikedComments[comment.id] = Number(comment.likes) || 0;
+            newDislikedComments[comment.id] = Number(comment.dislikes) || 0;
+            promises.push((async () => {
+              if (await alreadyLikedAnswer(comment.id)) return [comment.id, 'like'];
+              if (await alreadyDislikedAnswer(comment.id)) return [comment.id, 'dislike'];
+              return [comment.id, null];
+            })());
+          }
+        }
+
+        const results = await Promise.all(promises);
+        for (const [id, reaction] of results) {
+          reactions[id] = reaction;
+        }
+
+        setAnswerLikeCounts(prev => ({
+          ...prev,
+          comments: {
+            ...prev.comments,
+            ...newLikedComments,
+          },
+        }));
+        setAnswerDislikeCounts(prev => ({
+          ...prev,
+          comments: {
+            ...prev.comments,
+            ...newDislikedComments,
+          },
+        }));
+        console.log('reactions:', reactions);
+        setCommentReactions(reactions);
         setComments(byParent[null] || []);
         setChildrenByParent(byParent);
-
-        // preload like/dislike for visible roots
-        const entries = await Promise.all(
-          (byParent[null] || []).filter((c) => c.id != null).map(async (c) => {
-            try {
-              const cnt = await fetchAnswerLikesCount(c.id);
-              return [c.id, Number(cnt) || 0];
-            } catch { return [c.id, 0]; }
-          })
-        );
-        setLikeCounts((prev) => ({ ...prev, comments: Object.fromEntries(entries) }));
-
-        const dislikeEntries = await Promise.all(
-          (byParent[null] || []).filter((c) => c.id != null).map(async (c) => {
-            try {
-              const cnt = await fetchAnswerDislikesCount(c.id);
-              return [c.id, Number(cnt) || 0];
-            } catch { return [c.id, 0]; }
-          })
-        );
-        setDislikeCounts((prev) => ({ ...prev, comments: Object.fromEntries(dislikeEntries) }));
       } catch (e) {
         console.error('Error loading comments:', e);
       }
@@ -152,6 +178,28 @@ export default function QuestionPage() {
       Object.values(byParent).forEach(arr =>
         arr.sort((a, b) => new Date(b.created || b.createdAt) - new Date(a.created || a.createdAt))
       );
+      const newLikedComments = {};
+      const newDislikedComments = {};
+      for (const key in byParent) {
+        for (const comment of byParent[key]) {
+          newLikedComments[comment.id] = Number(comment.likes) || 0;
+          newDislikedComments[comment.id] = Number(comment.dislikes) || 0;
+        }
+      }
+      setAnswerLikeCounts(prev => ({
+        ...prev,
+        comments: {
+          ...prev.comments,
+          ...newLikedComments,
+        },
+      }));
+      setAnswerDislikeCounts(prev => ({
+        ...prev,
+        comments: {
+          ...prev.comments,
+          ...newDislikedComments,
+        },
+      }));
       setComments(byParent[null] || []);
       setChildrenByParent(byParent);
     })().catch(() => {});
@@ -170,7 +218,7 @@ export default function QuestionPage() {
     e.preventDefault();
     if (!commentText.trim()) return;
     try {
-      await postAnswer(id, commentText);
+      await postAnswer(id, commentText, currentUserId);
       setCommentText('');
       refreshAllComments();
       if (currentUserId) await addPoints(currentUserId);
@@ -181,33 +229,6 @@ export default function QuestionPage() {
   };
 
   const sortedComments = comments; // already sorted desc
-
-  async function toggleCommentReaction(commentId, reaction) {
-    if (!commentId) return;
-    if (pending.comments[commentId]) return;
-    const current = commentReactions[commentId] || null;
-    if (current === null) {
-      try {
-        setPending((p) => ({ ...p, comments: { ...p.comments, [commentId]: true } }));
-        if (reaction === 'like') { await likeAnswer(commentId); setCommentReactions((r) => ({ ...r, [commentId]: 'like' })); }
-        else { await dislikeAnswer(commentId); setCommentReactions((r) => ({ ...r, [commentId]: 'dislike' })); }
-        const [likesRef, dislikesRef] = await Promise.all([
-          fetchAnswerLikesCount(commentId), fetchAnswerDislikesCount(commentId),
-        ]);
-        setLikeCounts((prev) => ({ ...prev, comments: { ...prev.comments, [commentId]: Number(likesRef) || 0 } }));
-        setDislikeCounts((prev) => ({ ...prev, comments: { ...prev.comments, [commentId]: Number(dislikesRef) || 0 } }));
-      } catch (err) {
-        console.error('Failed to react on answer:', err);
-      } finally {
-        setPending((p) => {
-          const copy = { ...p.comments }; delete copy[commentId];
-          return { ...p, comments: copy };
-        });
-      }
-      return;
-    }
-    setCommentReactions((r) => ({ ...r, [commentId]: current === reaction ? null : reaction }));
-  }
 
   function handleShareLink(url) {
     const shareData = { title: 'AskMate', text: 'Check this out', url };
@@ -231,25 +252,50 @@ export default function QuestionPage() {
   }
   function handleShareQuestion() { handleShareLink(window.location.href); }
 
-  async function handleLikeClick(questionId) {
+  async function handleLikeQuestionClick(questionId) {
     const data = await likeQuestion(questionId);
     if (data === true) setPostReaction('like');
     else if (data === false) setPostReaction(null);
     try {
       const refreshed = await fetchQuestionLikesCount(questionId);
-      setLikeCounts((prev) => ({ ...prev, 'question': Number(refreshed) || 0 }));
+      setQuestionLikeCounts(Number(refreshed) || 0 );
     } catch {
       // ignore
     }
   }
 
-  async function handleDislikeClick(questionId) {
+  async function handleDislikeQuestionClick(questionId) {
     const data = await dislikeQuestion(questionId);
     if (data === true) setPostReaction('dislike');
     else if (data === false) setPostReaction(null);
     try {
       const refreshed = await fetchQuestionDislikesCount(questionId);
-      setDislikeCounts((prev) => ({ ...prev, 'question': Number(refreshed) || 0 }));
+      setQuestionDislikeCounts(Number(refreshed) || 0);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleLikeAnswerClick(answerId) {
+    const data = await likeAnswer(answerId);
+    if (data === true) setCommentReactions((r) => ({ ...r, [answerId]: 'like' }));
+    else if (data === false) setCommentReactions((r) => ({ ...r, [answerId]: null }));
+    try {
+      const refreshed = await fetchAnswerLikesCount(answerId);
+      console.log('refreshed like count for', answerId, 'is', refreshed);
+      setAnswerLikeCounts((prev) => ({ ...prev, comments: { ...prev.comments, [answerId]: Number(refreshed) || 0 } }));
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleDislikeAnswerClick(answerId) {
+    const data = await dislikeAnswer(answerId);
+    if (data === true) setCommentReactions((r) => ({ ...r, [answerId]: 'dislike' }));
+    else if (data === false) setCommentReactions((r) => ({ ...r, [answerId]: null }));
+    try {
+      const refreshed = await fetchAnswerDislikesCount(answerId);
+      setAnswerDislikeCounts((prev) => ({ ...prev, comments: { ...prev.comments, [answerId]: Number(refreshed) || 0 } }));
     } catch {
       // ignore
     }
@@ -282,16 +328,16 @@ export default function QuestionPage() {
             </button>
           )}
           {/* time shown in header; removed duplicate here */}
-          <div className="text-xs text-gray-600 mt-1">{likeCounts.question} upvotes {dislikeCounts.question} downvotes</div>
+          <div className="text-xs text-gray-600 mt-1">{questionLikeCounts} upvotes {questionDislikeCounts} downvotes</div>
 
           <div className="mt-2 flex items-center gap-2">
             <button type="button" className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${postReaction === 'like' ? 'text-blue-600' : ''}`}
-              onClick={() => handleLikeClick(id)} 
+              onClick={() => handleLikeQuestionClick(id)} 
               disabled={pending.post} aria-pressed={postReaction === 'like'} aria-label="Upvote post">
               <ArrowBigUp size={16} />
             </button>
             <button type="button" className={`btn btn-ghost btn-xs inline-flex items-center gap-1 ${postReaction === 'dislike' ? 'text-red-600' : ''}`}
-              onClick={() => handleDislikeClick(id)} 
+              onClick={() => handleDislikeQuestionClick(id)} 
               disabled={pending.post} aria-pressed={postReaction === 'dislike'} aria-label="Downvote post">
               <ArrowBigDown size={16} />
             </button>
@@ -330,13 +376,14 @@ export default function QuestionPage() {
               comment={comment}
               questionId={id}
               childrenByParent={childrenByParent}
-              likeCountsComments={likeCounts.comments}
-              dislikeCountsComments={dislikeCounts.comments}
+              likeCountsComments={answerLikeCounts.comments}
+              dislikeCountsComments={answerDislikeCounts.comments}
               commentReactions={commentReactions}
               pendingComments={pending.comments}
-              onToggleReaction={toggleCommentReaction}
+              onLikeAnswerClick={handleLikeAnswerClick}
+              onDislikeAnswerClick={handleDislikeAnswerClick}
               onShareComment={handleShareComment}
-              onReplyPosted={(parentId) => refreshAllComments(parentId)}
+              onReplyPosted={refreshAllComments}
               currentUserId={currentUserId}
             />
           ))
