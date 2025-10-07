@@ -4,14 +4,13 @@ import com.codecool.askmateoop.errorhandler.custom_exceptions.NotAllowedOperatio
 import com.codecool.askmateoop.model.entities.Answer;
 import com.codecool.askmateoop.model.entities.Question;
 import com.codecool.askmateoop.model.entities.UserEntity;
+import com.codecool.askmateoop.model.entities.ratings.AnswerDislike;
+import com.codecool.askmateoop.model.entities.ratings.AnswerLike;
 import com.codecool.askmateoop.model.payload.dto.answer.AnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewAnswerDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.NewReplyDTO;
 import com.codecool.askmateoop.model.payload.dto.answer.UpdatedAnswerDTO;
-import com.codecool.askmateoop.repository.AnswerRepository;
-import com.codecool.askmateoop.repository.QuestionRepository;
-import com.codecool.askmateoop.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
+import com.codecool.askmateoop.repository.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -19,20 +18,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
-
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class AnswerServiceTest {
+public class AnswerServiceTest {
 
     @Mock
     private QuestionRepository questionRepository;
@@ -43,25 +39,17 @@ class AnswerServiceTest {
     @Mock
     private AnswerRepository answerRepository;
 
+    @Mock
+    private AnswerLikeRepository answerLikeRepository;
+
+    @Mock
+    private AnswerDislikeRepository answerDislikeRepository;
+
     @InjectMocks
     private AnswerService answerService;
 
-    // ---------- helpers ----------
-    private void setAuthenticatedUser(String username) {
-        User principal = new User(username, "password", new HashSet<>());
-        var auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(auth);
-    }
-
-    @AfterEach
-    void clearSecurity() {
-        SecurityContextHolder.clearContext();
-    }
-
-    // ---------- tests ----------
-
     @Test
-    void getAnswersWithValidQuestionId() {
+    void getAnswersWithValidQuestionId(){
         int questionId = 1;
         Question question = new Question();
         question.setId(questionId);
@@ -75,45 +63,49 @@ class AnswerServiceTest {
         answer1.setContent("Content1");
         answer2.setContent("Content2");
         answer3.setContent("Content3");
-      
-        UserEntity user1 = new UserEntity(); user1.setUsername("author1");
-        UserEntity user2 = new UserEntity(); user2.setUsername("author2");
-        UserEntity user3 = new UserEntity(); user3.setUsername("author3");
-
-        Timestamp ts = Timestamp.valueOf(LocalDateTime.now());
-        answer1.setCreatedAt(ts);
-        answer2.setCreatedAt(ts);
-        answer3.setCreatedAt(ts);
-
+        UserEntity user1 = new UserEntity();
+        user1.setUsername("author1");
+        UserEntity user2 = new UserEntity();
+        user2.setUsername("author2");
+        UserEntity user3 = new UserEntity();
+        user3.setUsername("author3");
+        Timestamp timestamp = Mockito.mock(Timestamp.class);
+        answer1.setCreatedAt(timestamp);
+        answer2.setCreatedAt(timestamp);
+        answer3.setCreatedAt(timestamp);
         answer1.setAuthor(user1);
         answer2.setAuthor(user2);
         answer3.setAuthor(user3);
-
         answer1.setQuestion(question);
         answer2.setQuestion(question);
         answer3.setQuestion(question);
+        Answer parent1 = new Answer();
+        Answer parent2 = new Answer();
+        Answer parent3 = new Answer();
+        parent1.setId(1);
+        parent2.setId(2);
+        parent3.setId(3);
+        answer1.setLikes(2);
+        answer2.setLikes(4);
+        answer3.setLikes(6);
+        answer1.setDislikes(1);
+        answer2.setDislikes(3);
+        answer3.setDislikes(0);
+        answer1.setParent(parent1);
+        answer2.setParent(parent2);
+        answer3.setParent(parent3);
 
-        Answer parent1 = new Answer(); parent1.setId(1);
-        Answer parent2 = new Answer(); parent2.setId(2);
-        Answer parent3 = new Answer(); parent3.setId(3);
-
-        answer1.setLikes(2); answer1.setDislikes(1); answer1.setParent(parent1);
-        answer2.setLikes(4); answer2.setDislikes(3); answer2.setParent(parent2);
-        answer3.setLikes(6); answer3.setDislikes(0); answer3.setParent(parent3);
-
-        when(answerRepository.getAllByQuestionId(questionId))
-                .thenReturn(Optional.of(List.of(answer1, answer2, answer3)));
-
-        List<AnswerDTO> expected = List.of(
-                new AnswerDTO(11, "Content1", ts, "author1", 1, 1, 2, 1),
-                new AnswerDTO(22, "Content2", ts, "author2", 2, 1, 4, 3),
-                new AnswerDTO(33, "Content3", ts, "author3", 3, 1, 6, 0)
-        );
+        List<Answer> answers = List.of(answer1, answer2, answer3);
+        when(answerRepository.getAllByQuestionId(questionId)).thenReturn(Optional.of(answers));
+        AnswerDTO answerDTO1 = new AnswerDTO(11, "Content1", timestamp, "author1", 1, 1, 2, 1);
+        AnswerDTO answerDTO2 = new AnswerDTO(22, "Content2", timestamp, "author2", 2, 1, 4, 3);
+        AnswerDTO answerDTO3 = new AnswerDTO(33, "Content3", timestamp, "author3", 3, 1, 6, 0);
+        List<AnswerDTO> expected = List.of(answerDTO1, answerDTO2, answerDTO3);
         assertEquals(expected, answerService.getAnswers(questionId));
     }
 
     @Test
-    void getAnswersWithInvalidQuestionId() {
+    void getAnswersWithInvalidQuestionId(){
         int questionId = 1;
         when(questionRepository.findById(questionId)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> answerService.getAnswers(questionId));
@@ -121,30 +113,21 @@ class AnswerServiceTest {
 
     @Test
     void addNewAnswerWithValidQuestionIdAndUserId() {
-        // Service ignores dto.userId() and uses the authenticated user
         NewAnswerDTO dto = new NewAnswerDTO("Content", 3, 5);
-
-        Question question = new Question(); question.setId(dto.questionId());
+        Question question = new Question();
+        question.setId(dto.questionId());
         when(questionRepository.findById(dto.questionId())).thenReturn(Optional.of(question));
-
-        // set authenticated user
-        String username = "authorUser";
-        setAuthenticatedUser(username);
-
-        // return a current user whose id matches dto.userId() to keep your assertions valid
-        UserEntity currentUser = new UserEntity();
-        currentUser.setId(dto.userId());
-        currentUser.setUsername(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(currentUser));
-
-        when(answerRepository.save(Mockito.any(Answer.class))).thenAnswer(inv -> inv.getArgument(0));
+        UserEntity author = new UserEntity();
+        author.setId(dto.userId());
+        when(userRepository.findById(dto.userId())).thenReturn(Optional.of(author));
+        Answer answer = new Answer();
+        when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
 
         answerService.addNewAnswer(dto);
 
         ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
         verify(answerRepository).save(answerCaptor.capture());
         Answer capturedAnswer = answerCaptor.getValue();
-
         assertEquals(dto.content(), capturedAnswer.getContent());
         assertEquals(dto.questionId(), capturedAnswer.getQuestion().getId());
         assertEquals(dto.userId(), capturedAnswer.getAuthor().getId());
@@ -159,42 +142,39 @@ class AnswerServiceTest {
 
     @Test
     void addNewAnswerWithInvalidUserId() {
-        // The failure must come from user lookup via username
         NewAnswerDTO dto = new NewAnswerDTO("Content", 3, 5);
-
-        Question q = new Question(); q.setId(dto.questionId());
-        when(questionRepository.findById(dto.questionId())).thenReturn(Optional.of(q));
-
-        String username = "ghost";
-        setAuthenticatedUser(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
-
+        when(questionRepository.findById(dto.questionId())).thenReturn(Optional.of(new Question()));
+        when(userRepository.findById(dto.userId())).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> answerService.addNewAnswer(dto));
     }
 
     @Test
     void updateAnswerWithValidAnswerIdThenSaveAnswer() {
-        String username = "testUser";
-        setAuthenticatedUser(username);
-
-        UserEntity author = new UserEntity(); author.setId(10); author.setUsername(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(author));
-
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity author = new UserEntity();
+        author.setId(10);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(author));
         UpdatedAnswerDTO dto = new UpdatedAnswerDTO(3, "Updated comment");
         Answer answer = new Answer();
         answer.setAuthor(author);
         answer.setId(dto.id());
         answer.setContent("Old comment");
-        answer.setCreatedAt(Timestamp.valueOf(LocalDateTime.now()));
-
         when(answerRepository.findById(dto.id())).thenReturn(Optional.of(answer));
-        when(answerRepository.save(Mockito.any(Answer.class))).thenAnswer(inv -> inv.getArgument(0));
+        Timestamp timestamp = Mockito.mock(Timestamp.class);
+        answer.setCreatedAt(timestamp);
+        when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
 
         answerService.updateAnswer(dto);
 
         ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
         verify(answerRepository).save(answerCaptor.capture());
-        assertEquals(dto.content(), answerCaptor.getValue().getContent());
+        Answer capturedAnswer = answerCaptor.getValue();
+        assertEquals(dto.content(), capturedAnswer.getContent());
     }
 
     @Test
@@ -206,46 +186,26 @@ class AnswerServiceTest {
 
     @Test
     void updateAnswerWhenUserIsNotAuthorizedThenThrowsNotAllowedOperationException() {
-        String username = "testUser";
-        setAuthenticatedUser(username);
-
-        UserEntity current = new UserEntity(); current.setId(2); current.setUsername(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(current));
-
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
         UpdatedAnswerDTO dto = new UpdatedAnswerDTO(5, "New Content");
-
-        UserEntity realAuthor = new UserEntity(); realAuthor.setId(999); realAuthor.setUsername("realAuthor");
+        UserEntity user = new UserEntity();
+        user.setId(2);
+        user.setUsername("testUser");
+        UserEntity user2 = new UserEntity();
+        user2.setUsername("realAuthor");
+        when(userRepository.findByUsername(springUser.getUsername()))
+                .thenReturn(Optional.of(user));
         Answer answer = new Answer();
         answer.setId(5);
         answer.setContent("Old Content");
-        answer.setAuthor(realAuthor);
-
+        answer.setAuthor(user2);
         when(answerRepository.findById(answer.getId())).thenReturn(Optional.of(answer));
-
         assertThrows(NotAllowedOperationException.class, () -> answerService.updateAnswer(dto));
-    }
-
-    @Test
-    void likeAnswerWithValidAnswerIdThenSaveAnswer() {
-        int answerId = 1;
-        Answer answer = new Answer();
-        answer.setId(answerId);
-        answer.setLikes(4);
-        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-        when(answerRepository.save(Mockito.any(Answer.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        answerService.likeAnswer(answerId);
-
-        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
-        verify(answerRepository).save(answerCaptor.capture());
-        assertEquals(5, answerCaptor.getValue().getLikes());
-    }
-
-    @Test
-    void likeAnswerWithInvalidAnswerIdThenThrowNoSuchElementException() {
-        int answerId = 1;
-        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> answerService.likeAnswer(answerId));
     }
 
     @Test
@@ -296,91 +256,30 @@ class AnswerServiceTest {
         int answerId = 1;
         Answer answer = new Answer();
         answer.setId(answerId);
-        answer.setLikes(4);
+        answer.setAuthor(currentUser);
         when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-        assertEquals(4, answerService.getLikes(answerId));
-    }
-
-    @Test
-    void getLikesWithInvalidAnswerIdThenThrowNoSuchElementException() {
-        int answerId = 1;
-        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> answerService.getLikes(answerId));
-    }
-
-    @Test
-    void dislikeAnswerWithValidAnswerIdThenSaveAnswer() {
-        int answerId = 10;
-        Answer answer = new Answer();
-        answer.setId(answerId);
-        answer.setDislikes(4);
-        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-        when(answerRepository.save(Mockito.any(Answer.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        answerService.dislikeAnswer(answerId);
-
-        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
-        verify(answerRepository).save(answerCaptor.capture());
-        assertEquals(5, answerCaptor.getValue().getDislikes());
-    }
-
-    @Test
-    void dislikeAnswerWithInvalidAnswerIdThenThrowNoSuchElementException() {
-        int answerId = 10;
-        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> answerService.dislikeAnswer(answerId));
-    }
-
-    @Test
-    void getDislikesWithValidAnswerIdThenGetDislikes() {
-        int answerId = 10;
-        Answer answer = new Answer();
-        answer.setId(answerId);
-        answer.setDislikes(5);
-        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-        assertEquals(5, answerService.getDislikes(answerId));
-    }
-
-    @Test
-    void getDislikesWithInvalidAnswerIdThenThrowNoSuchElementException() {
-        int answerId = 10;
-        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> answerService.getDislikes(answerId));
-    }
-
-    @Test
-    void deleteAnswerWhenUserIsAuthorizedThenDeleteAnswer() {
-        String username = "testUser";
-        setAuthenticatedUser(username);
-
-        UserEntity currentUser = new UserEntity(); currentUser.setId(10); currentUser.setUsername(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(currentUser));
-
-        int answerId = 1;
-        Answer answer = new Answer(); answer.setId(answerId); answer.setAuthor(currentUser);
-
-        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-
         answerService.deleteAnswer(answerId);
-
         verify(answerRepository, times(1)).deleteById(answerId);
     }
 
     @Test
     void deleteAnswerWhenUserIsNotAuthorizedThenThrowsNotAllowedOperationException() {
-        String username = "testUser";
-        setAuthenticatedUser(username);
-
-        UserEntity currentUser = new UserEntity(); currentUser.setId(10); currentUser.setUsername(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(currentUser));
-
-        UserEntity realAuthor = new UserEntity(); realAuthor.setId(11);
-
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity currentUser = new UserEntity();
+        currentUser.setId(10);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(currentUser));
+        UserEntity realAuthor = new UserEntity();
+        realAuthor.setId(11);
         int answerId = 2;
-        Answer answer = new Answer(); answer.setId(answerId); answer.setAuthor(realAuthor);
-
+        Answer answer = new Answer();
+        answer.setId(answerId);
+        answer.setAuthor(realAuthor);
         when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-
         assertThrows(NotAllowedOperationException.class, () -> answerService.deleteAnswer(answerId));
     }
 
@@ -398,13 +297,12 @@ class AnswerServiceTest {
         answer.setId(dto.id());
         answer.setContent("Old content");
         when(answerRepository.findById(dto.id())).thenReturn(Optional.of(answer));
-        when(answerRepository.save(Mockito.any(Answer.class))).thenAnswer(inv -> inv.getArgument(0));
-
+        when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
         answerService.updateAnyAnswer(dto);
-
         ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
         verify(answerRepository).save(answerCaptor.capture());
-        assertEquals(dto.content(), answerCaptor.getValue().getContent());
+        Answer capturedAnswer = answerCaptor.getValue();
+        assertEquals(dto.content(), capturedAnswer.getContent());
     }
 
     @Test
@@ -417,11 +315,10 @@ class AnswerServiceTest {
     @Test
     void deleteAnyAnswerWithValidAnswerIdThenDeleteAnswer() {
         int answerId = 8;
-        Answer answer = new Answer(); answer.setId(answerId);
+        Answer answer = new Answer();
+        answer.setId(answerId);
         when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-
         answerService.deleteAnyAnswer(answerId);
-
         verify(answerRepository, times(1)).deleteById(answerId);
     }
 
@@ -435,22 +332,24 @@ class AnswerServiceTest {
     @Test
     void getAnswerWithValidAnswerIdThenGetAnswer() {
         int answerId = 4;
-        UserEntity author = new UserEntity(); author.setUsername("Author");
-
+        UserEntity author = new UserEntity();
+        author.setUsername("Author");
         Answer answer = new Answer();
         answer.setId(answerId);
         answer.setContent("Content");
         answer.setAuthor(author);
-        Timestamp ts = Timestamp.valueOf(LocalDateTime.now());
-        answer.setCreatedAt(ts);
-        Answer parent = new Answer(); parent.setId(2);
+        Timestamp timestamp = Mockito.mock(Timestamp.class);
+        answer.setCreatedAt(timestamp);
+        Answer parent = new Answer();
+        parent.setId(2);
         answer.setParent(parent);
-        Question question = new Question(); question.setId(1);
+        Question question = new Question();
+        question.setId(1);
         answer.setQuestion(question);
         answer.setLikes(3);
         answer.setDislikes(1);
         when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-        AnswerDTO expected = new AnswerDTO(4, "Content", ts, "Author", 2, 1, 3, 1);
+        AnswerDTO expected = new AnswerDTO(4, "Content", timestamp, answer.getAuthor().getUsername(), parent.getId(), question.getId(), 3, 1);
         assertEquals(expected, answerService.getAnswer(answerId));
     }
 
@@ -464,53 +363,363 @@ class AnswerServiceTest {
     @Test
     void addCommentOfCommentWithValidParentIdAndUserIdThenAddComment() {
         int parentId = 5;
-
-        NewReplyDTO dto = new NewReplyDTO("New comment", 3, parentId);
-
-        // Service uses current user, not dto.userId()
-        String username = "replier";
-        setAuthenticatedUser(username);
-        UserEntity current = new UserEntity(); current.setId(77); current.setUsername(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(current));
-
-        Answer parentAnswer = new Answer(); parentAnswer.setId(parentId);
-        parentAnswer.setQuestion(new Question());
-        parentAnswer.setReplies(new ArrayList<>(List.of(new Answer(), new Answer())));
-        when(answerRepository.findById(parentId)).thenReturn(Optional.of(parentAnswer));
-
-        when(answerRepository.save(Mockito.any(Answer.class))).thenAnswer(inv -> inv.getArgument(0));
-
+        NewReplyDTO dto = new NewReplyDTO("New comment", 3, 5);
+        UserEntity author = new UserEntity();
+        when(userRepository.findById(dto.userId())).thenReturn(Optional.of(author));
+        Question question = new Question();
+        Answer parentAnswer = new Answer();
+        parentAnswer.setId(dto.parentId());
+        Answer reply1 = new Answer();
+        Answer reply2 = new Answer();
+        List<Answer> replies = new ArrayList<>();
+        replies.add(reply1);
+        replies.add(reply2);
+        parentAnswer.setReplies(replies);
+        when(answerRepository.findById(dto.parentId())).thenReturn(Optional.of(parentAnswer));
+        Answer answer = new Answer();
+        answer.setContent(dto.content());
+        answer.setAuthor(author);
+        answer.setQuestion(question);
+        Timestamp timestamp = Mockito.mock(Timestamp.class);
+        answer.setCreatedAt(timestamp);
+        parentAnswer.getReplies().add(answer);
+        answer.setParent(parentAnswer);
+        when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
 
         answerService.addCommentOfComment(parentId, dto);
 
-        ArgumentCaptor<Answer> captor = ArgumentCaptor.forClass(Answer.class);
-        verify(answerRepository).save(captor.capture());
-        assertEquals(dto.content(), captor.getValue().getContent());
-        assertEquals(parentId, captor.getValue().getParent().getId());
+        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(answerCaptor.capture());
+        Answer capturedAnswer = answerCaptor.getValue();
+        assertEquals(dto.content(), capturedAnswer.getContent());
     }
 
     @Test
     void addCommentOfCommentWithInvalidUserIdThenThrowNoSuchElementException() {
         int parentId = 5;
-        NewReplyDTO dto = new NewReplyDTO("New comment", 3, parentId);
-
-        String username = "ghost";
-        setAuthenticatedUser(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.empty()); // trigger user-not-found
+        NewReplyDTO dto = new NewReplyDTO("New comment", 3, 5);
+        when(userRepository.findById(dto.userId())).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> answerService.addCommentOfComment(parentId, dto));
     }
 
     @Test
     void addCommentOfCommentWithInvalidParentIdThenThrowNoSuchElementException() {
         int parentId = 11;
-
-        NewReplyDTO dto = new NewReplyDTO("New comment", 3, parentId);
-
-        String username = "replier";
-        setAuthenticatedUser(username);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(new UserEntity()));
-
-        when(answerRepository.findById(parentId)).thenReturn(Optional.empty()); // trigger parent-not-found
+        NewReplyDTO dto = new NewReplyDTO("New comment", 3, 11);
+        Question question = new Question();
+        question.setId(3);
+        when(userRepository.findById(dto.userId())).thenReturn(Optional.of(new UserEntity()));
+        when(answerRepository.findById(parentId)).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> answerService.addCommentOfComment(parentId, dto));
+    }
+
+    @Test
+    void addLikeToAnswerWhenUserIsAuthorizedAndAnswerIdIsValidAndAnswerIsNotLikedAndNotDislikedByUser() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        Answer answer = new Answer();
+        answer.setId(5);
+        answer.setLikes(10);
+        when(answerRepository.findById(5)).thenReturn(Optional.of(answer));
+        when(answerDislikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(false);
+        when(answerLikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(false);
+
+        boolean result = answerService.addLikeToAnswer(id);
+        assertTrue(result);
+
+        ArgumentCaptor<AnswerLike> answerLikeCaptor = ArgumentCaptor.forClass(AnswerLike.class);
+        verify(answerLikeRepository).save(answerLikeCaptor.capture());
+        AnswerLike capturedAnswerLike = answerLikeCaptor.getValue();
+        assertEquals(5, capturedAnswerLike.getAnswerId());
+        assertEquals(reviewer, capturedAnswerLike.getReviewer());
+
+        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(answerCaptor.capture());
+        Answer capturedAnswer = answerCaptor.getValue();
+        assertEquals(id, capturedAnswer.getId());
+        assertEquals(11, capturedAnswer.getLikes());
+    }
+
+    @Test
+    void addLikeToAnswerWhenUserIsAuthorizedButAnswerIsAlreadyDislikedByUserThenThrowsNotAllowedException() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        Answer answer = new Answer();
+        answer.setId(5);
+        when(answerRepository.findById(5)).thenReturn(Optional.of(answer));
+        when(answerDislikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(true);
+
+        assertThrows(NotAllowedOperationException.class, () -> answerService.addLikeToAnswer(id));
+    }
+
+    @Test
+    void addLikeToAnswerWhenUserIsAuthorizedButAnswerIsAlreadyLikedByUser() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        Answer answer = new Answer();
+        answer.setId(5);
+        answer.setLikes(10);
+        when(answerRepository.findById(5)).thenReturn(Optional.of(answer));
+        when(answerDislikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(false);
+        when(answerLikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(true);
+        doNothing().when(answerLikeRepository).deleteByAnswerIdAndReviewer(5, reviewer);
+
+        boolean result = answerService.addLikeToAnswer(id);
+        assertFalse(result);
+
+        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(answerCaptor.capture());
+        Answer capturedAnswer1 = answerCaptor.getValue();
+        assertEquals(id, capturedAnswer1.getId());
+        assertEquals(9, capturedAnswer1.getLikes());
+    }
+
+    @Test
+    void addLikeToAnswerWhenUserIsNotFoundThenThrowNoSuchElementException() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> answerService.addLikeToAnswer(id));
+    }
+
+    @Test
+    void addLikeToAnswerWhenUserIsAuthorizedButAnswerIsNotFoundThenThrowNoSuchElementException() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        when(answerRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> answerService.addLikeToAnswer(id));
+    }
+
+    @Test
+    void addDislikeToAnswerWhenUserIsAuthorizedAndAnswerIdIsValidAndAnswerIsNotDislikedAndNotLikedByUser() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        Answer answer = new Answer();
+        answer.setId(5);
+        answer.setDislikes(10);
+        when(answerRepository.findById(5)).thenReturn(Optional.of(answer));
+        when(answerLikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(false);
+        when(answerDislikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(false);
+
+        boolean result = answerService.addDislikeToAnswer(id);
+        assertTrue(result);
+
+        ArgumentCaptor<AnswerDislike> answerDislikeCaptor = ArgumentCaptor.forClass(AnswerDislike.class);
+        verify(answerDislikeRepository).save(answerDislikeCaptor.capture());
+        AnswerDislike capturedAnswerDislike = answerDislikeCaptor.getValue();
+        assertEquals(5, capturedAnswerDislike.getAnswerId());
+        assertEquals(reviewer, capturedAnswerDislike.getReviewer());
+
+        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(answerCaptor.capture());
+        Answer capturedAnswer = answerCaptor.getValue();
+        assertEquals(id, capturedAnswer.getId());
+        assertEquals(11, capturedAnswer.getDislikes());
+    }
+
+    @Test
+    void addDislikeToAnswerWhenUserIsAuthorizedButAnswerIsAlreadyLikedByUserThenThrowsNotAllowedException() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        Answer answer = new Answer();
+        answer.setId(5);
+        when(answerRepository.findById(5)).thenReturn(Optional.of(answer));
+        when(answerLikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(true);
+
+        assertThrows(NotAllowedOperationException.class, () -> answerService.addDislikeToAnswer(id));
+    }
+
+    @Test
+    void addDislikeToAnswerWhenUserIsAuthorizedButAnswerIsAlreadyDislikedByUser() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        Answer answer = new Answer();
+        answer.setId(5);
+        answer.setDislikes(10);
+        when(answerRepository.findById(5)).thenReturn(Optional.of(answer));
+        when(answerLikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(false);
+        when(answerDislikeRepository.existsByAnswerIdAndReviewer(5, reviewer)).thenReturn(true);
+        doNothing().when(answerDislikeRepository).deleteByAnswerIdAndReviewer(5, reviewer);
+
+        boolean result = answerService.addDislikeToAnswer(id);
+        assertFalse(result);
+
+        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
+        verify(answerRepository).save(answerCaptor.capture());
+        Answer capturedAnswer1 = answerCaptor.getValue();
+        assertEquals(id, capturedAnswer1.getId());
+        assertEquals(9, capturedAnswer1.getDislikes());
+    }
+
+    @Test
+    void addDislikeToAnswerWhenUserIsNotFoundThenThrowNoSuchElementException() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> answerService.addDislikeToAnswer(id));
+    }
+
+    @Test
+    void addDislikeToAnswerWhenUserIsAuthorizedButAnswerIsNotFoundThenThrowNoSuchElementException() {
+        int id = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        when(answerRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> answerService.addDislikeToAnswer(id));
+    }
+
+    @Test
+    void alreadyLikedWhenUserLikedTheAnswerThenReturnTrue() {
+        int answerId = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        when(answerLikeRepository.existsByAnswerIdAndReviewer(answerId, reviewer)).thenReturn(true);
+        assertTrue(answerService.alreadyLiked(answerId));
+    }
+
+    @Test
+    void alreadyLikedWhenUserNotLikedTheAnswerThenReturnFalse() {
+        int answerId = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        when(answerLikeRepository.existsByAnswerIdAndReviewer(answerId, reviewer)).thenReturn(false);
+        assertFalse(answerService.alreadyLiked(answerId));
+    }
+
+    @Test
+    void alreadyLikedWhenUserIsNotFoundThenThrowNoSuchElementException() {
+        int answerId = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.alreadyLiked(answerId));
+    }
+
+    @Test
+    void alreadyDislikedWhenUserDislikedTheAnswerThenReturnTrue() {
+        int answerId = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        when(answerDislikeRepository.existsByAnswerIdAndReviewer(answerId, reviewer)).thenReturn(true);
+        assertTrue(answerService.alreadyDisliked(answerId));
+    }
+
+    @Test
+    void alreadyDislikedWhenUserNotDislikedTheAnswerThenReturnFalse() {
+        int answerId = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity reviewer = new UserEntity();
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(reviewer));
+        when(answerDislikeRepository.existsByAnswerIdAndReviewer(answerId, reviewer)).thenReturn(false);
+        assertFalse(answerService.alreadyDisliked(answerId));
+    }
+
+    @Test
+    void alreadyDislikedWhenUserIsNotFoundThenThrowNoSuchElementException() {
+        int answerId = 5;
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> answerService.alreadyDisliked(answerId));
     }
 }

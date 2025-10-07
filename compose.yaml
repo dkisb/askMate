@@ -4,14 +4,14 @@ volumes:
 services:
   db:
     image: postgres:17
-    container_name: my_postgres
+    container_name: my_postgres_db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      POSTGRES_DB: ${SPRING_DATASOURCE_DB}
     ports:
-      - "5432:5432"
+      - "${SPRING_DATASOURCE_PORT}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
 
@@ -21,11 +21,11 @@ services:
     container_name: askmate_app
     restart: on-failure
     environment:
-      DATABASE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
-      DATABASE_USERNAME: ${POSTGRES_USER}
-      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
-      ASK_MATE_APP_JWTSECRET: ${JWT_SECRET}
-      ASK_MATE_APP_JWTEXPIRATIONMS: ${JWT_EXPIRATION_MS}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DATABASE_DB}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      askMate.app.jwtSecret: ${JWT_SECRET}
+      askMate.app.jwtExpirationMs: ${JWT_EXPIRATION_MS}
     ports:
       - "8080:8080"
     depends_on:

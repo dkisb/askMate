@@ -42,12 +42,6 @@ export default function QuestionPage() {
   const [currentUserId, setCurrentUserId] = useState(fromState.userId || null);
   const API_URL = import.meta.env.VITE_API_URL;
 
-  console.log("commentReactions:", commentReactions);
-  //console.log('answerlikecounts', answerLikeCounts)
-  //console.log('questionlikecounts', questionLikeCounts)
-  //console.log('questiondislikecounts', questionDislikeCounts)
-
-
   useEffect(() => {
     async function ensureUser() {
       if (currentUserId) return;
