@@ -38,10 +38,10 @@ export default function TopicsList({ topPostTitle }) {
         </Typography>
         <List disablePadding dense>
           {mockTopics.map((t, idx) => (
-            <>
+            <React.Fragment key={t.id}>
               <ListItem key={t.id} sx={{ py: 1 }} secondaryAction={<Chip size="small" label={`${t.upvotes} upvotes`} /> }>
                 <ListItemText
-                  primaryTypographyProps={{ variant: 'subtitle1' }}
+                  slotProps={{ primary: { variant: 'subtitle1' } }}
                   primary={t.name}
                   secondary={
                     <Typography variant="caption" color="text.secondary">{t.posts} posts</Typography>
