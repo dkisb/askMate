@@ -18,9 +18,9 @@ const mockTopics = [
 
 export default function TopicsList({ topPostTitle }) {
   return (
-    <Card elevation={3} sx={{ width: '100%' }}>
-      <CardContent sx={{ p: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+    <Card elevation={3} sx={{ width: '100%', maxWidth: 360 }}>
+      <CardContent sx={{ p: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
           Active Topics
         </Typography>
         {topPostTitle ? (
@@ -28,23 +28,23 @@ export default function TopicsList({ topPostTitle }) {
             <Typography variant="subtitle2" color="text.secondary">
               Top post of the week
             </Typography>
-            <Typography variant="body1" sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1.5 }}>
               {topPostTitle}
             </Typography>
           </>
         ) : null}
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           Most upvoted topics and total upvotes
         </Typography>
-        <List disablePadding>
+        <List disablePadding dense>
           {mockTopics.map((t, idx) => (
-            <React.Fragment key={t.id}>
-              <ListItem sx={{ py: 2 }} secondaryAction={<Chip size="small" label={`${t.upvotes} upvotes`} /> }>
+            <>
+              <ListItem key={t.id} sx={{ py: 1 }} secondaryAction={<Chip size="small" label={`${t.upvotes} upvotes`} /> }>
                 <ListItemText
                   primaryTypographyProps={{ variant: 'subtitle1' }}
                   primary={t.name}
                   secondary={
-                    <Typography variant="body2" color="text.secondary">{t.posts} posts</Typography>
+                    <Typography variant="caption" color="text.secondary">{t.posts} posts</Typography>
                   }
                 />
               </ListItem>

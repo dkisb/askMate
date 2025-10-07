@@ -10,6 +10,7 @@ export default function ProfilePage() {
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     setUserName(user?.userName || '');
@@ -38,7 +39,7 @@ export default function ProfilePage() {
     setMessage('');
     try {
       const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
-      const res = await fetch('/api/user/me', {
+      const res = await fetch(`${API_URL}/api/user/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -8,11 +8,12 @@ export default function LoginForm() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { login } = useUser();
+  const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      const response = await fetch('/api/user/login', {
+      const response = await fetch(`${API_URL}/api/user/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: userName, password }),
@@ -35,7 +36,7 @@ export default function LoginForm() {
         console.error('Error setting JWT token:', storageErr);
       }
 
-      const meRes = await fetch('/api/user/me', {
+      const meRes = await fetch(`${API_URL}/api/user/me`, {
         headers: { Authorization: 'Bearer ' + jwt },
       });
       if (!meRes.ok) {
