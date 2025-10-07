@@ -18,7 +18,7 @@ export default function ProfilePage() {
   }, [user]);
 
   async function fetchEmail() {
-    const response = await fetch('/api/user/email', {
+    const response = await fetch(`${API_URL}/api/user/email`, {
       headers: {
         'Content-Type': 'application/json',
         ...(localStorage.getItem('jwtToken') ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}),

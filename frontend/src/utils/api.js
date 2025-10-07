@@ -156,7 +156,7 @@ export async function fetchQuestionLikesCount(questionId) {
   return await res.json();
 }
 export async function fetchQuestionDislikesCount(questionId) {
-  const res = await fetch(`/api/question/dislike/${questionId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/question/dislike/${questionId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to fetch question dislikes: ${res.status}`);
   return await res.json();
 }
@@ -185,14 +185,14 @@ export async function fetchAnswerDislikesCount(answerId) {
 }
 
 export async function alreadyLikedAnswer(answerId) {
-  const res = await fetch(`/api/answer/like/user/${answerId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/like/user/${answerId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to check if answer already liked: ${res.status}`);
   const data = await res.json();
   return data === true;
 }
 
 export async function alreadyDislikedAnswer(answerId) {
-  const res = await fetch(`/api/answer/dislike/user/${answerId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/dislike/user/${answerId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to check if answer already disliked: ${res.status}`);
   const data = await res.json();
   return data === true;

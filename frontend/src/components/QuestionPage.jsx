@@ -74,12 +74,12 @@ export default function QuestionPage() {
         const data = await fetchQuestion(id);
         const likesNumber = await fetchQuestionLikesCount(id);
         const dislikesNumber = await fetchQuestionDislikesCount(id);
-        const likeResponse = await fetch(`/api/question/like/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+        const likeResponse = await fetch(`${API_URL}/api/question/like/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
         if (likeResponse.ok) {
           const liked = await likeResponse.json();
           if (liked === true) setPostReaction('like');
           else {
-            const dislikeResponse = await fetch(`/api/question/dislike/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            const dislikeResponse = await fetch(`${API_URL}/api/question/dislike/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
             if (dislikeResponse.ok) {
               const disliked = await dislikeResponse.json();
               if (disliked === true) setPostReaction('dislike');

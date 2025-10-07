@@ -43,8 +43,8 @@ export default function HomePage() {
           try {
             const likesCount = await fetchQuestionLikesCount(q.id);
             const dislikesCount = await fetchQuestionDislikesCount(q.id);
-            const likeResponse = await fetch(`/api/question/like/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
-            const dislikeResponse = await fetch(`/api/question/dislike/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            const likeResponse = await fetch(`${API_URL}/api/question/like/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            const dislikeResponse = await fetch(`${API_URL}/api/question/dislike/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
             if (likeResponse.ok) {
               const data = await likeResponse.json();
               if (data === true) {
