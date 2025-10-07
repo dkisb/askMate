@@ -40,12 +40,7 @@ export default function QuestionPage() {
   const navigate = useNavigate();
   const fromState = location.state || {};
   const [currentUserId, setCurrentUserId] = useState(fromState.userId || null);
-
-  console.log("commentReactions:", commentReactions);
-  //console.log('answerlikecounts', answerLikeCounts)
-  //console.log('questionlikecounts', questionLikeCounts)
-  //console.log('questiondislikecounts', questionDislikeCounts)
-
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     async function ensureUser() {
@@ -53,7 +48,7 @@ export default function QuestionPage() {
       const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
       if (!token) { navigate('/', { replace: true }); return; }
       try {
-        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        const meRes = await fetch(`${API_URL}/api/user/me`, { headers: { Authorization: 'Bearer ' + token } });
         if (!meRes.ok) { navigate('/', { replace: true }); return; }
         const me = await meRes.json();
         const idFromMe = me.userId ?? me.id ?? null;
@@ -73,12 +68,12 @@ export default function QuestionPage() {
         const data = await fetchQuestion(id);
         const likesNumber = await fetchQuestionLikesCount(id);
         const dislikesNumber = await fetchQuestionDislikesCount(id);
-        const likeResponse = await fetch(`/api/question/like/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+        const likeResponse = await fetch(`${API_URL}/api/question/like/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
         if (likeResponse.ok) {
           const liked = await likeResponse.json();
           if (liked === true) setPostReaction('like');
           else {
-            const dislikeResponse = await fetch(`/api/question/dislike/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            const dislikeResponse = await fetch(`${API_URL}/api/question/dislike/user/${id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
             if (dislikeResponse.ok) {
               const disliked = await dislikeResponse.json();
               if (disliked === true) setPostReaction('dislike');
@@ -96,7 +91,7 @@ export default function QuestionPage() {
     }
     loadQuestion();
     return () => { isCancelled = true; };
-  }, [id, currentUserId, navigate]);
+  }, [id, currentUserId, navigate, API_URL]);
 
   // build flat list + children map
   useEffect(() => {

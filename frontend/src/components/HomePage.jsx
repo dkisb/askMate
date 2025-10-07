@@ -29,6 +29,7 @@ export default function HomePage() {
   const [currentUserName, setCurrentUserName] = useState(fromState.userName ?? null);
   const [currentUserId, setCurrentUserId] = useState(fromState.userId ?? null);
   const [userReviews, setUserReviews] = useState({});
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const fetchData = async () => {
     setLoading(true);
@@ -42,8 +43,8 @@ export default function HomePage() {
           try {
             const likesCount = await fetchQuestionLikesCount(q.id);
             const dislikesCount = await fetchQuestionDislikesCount(q.id);
-            const likeResponse = await fetch(`/api/question/like/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
-            const dislikeResponse = await fetch(`/api/question/dislike/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            const likeResponse = await fetch(`${API_URL}/api/question/like/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
+            const dislikeResponse = await fetch(`${API_URL}/api/question/dislike/user/${q.id}`, { headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('jwtToken'  ) ? { Authorization: 'Bearer ' + localStorage.getItem('jwtToken') } : {}) } });
             if (likeResponse.ok) {
               const data = await likeResponse.json();
               if (data === true) {
@@ -124,7 +125,7 @@ export default function HomePage() {
     if (!token) return;
     (async () => {
       try {
-        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        const meRes = await fetch(`${API_URL}/api/user/me`, { headers: { Authorization: 'Bearer ' + token } });
         if (!meRes.ok) return;
         const me = await meRes.json();
         setCurrentUserName(me.userName ?? me.username ?? null);
@@ -133,7 +134,7 @@ export default function HomePage() {
         // ignore
       }
     })();
-  }, [currentUserId]);
+  }, [currentUserId, API_URL]);
 
   async function awardQuestionPoints() {
     try {
@@ -294,13 +295,11 @@ export default function HomePage() {
         </Box>
         <Box
           sx={{
-            flex: { xs: '1 1 100%', md: '1 1 0' },
-            display: { xs: 'block', md: 'flex' },
-            alignItems: { md: 'center' },
-            justifyContent: { md: 'center' },
+            flex: { xs: '1 1 100%', md: '0 0 360px' },
+            width: { md: 360 },
+            display: { xs: 'block', md: 'block' },
             position: { xs: 'static', md: 'sticky' },
             top: { md: 0 },
-            height: { md: '100vh' },
             pl: { md: 6 }
           }}
         >

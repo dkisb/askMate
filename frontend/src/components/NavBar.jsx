@@ -59,6 +59,7 @@ export default function PrimarySearchAppBar() {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const navigate = useNavigate();
   const { user, setUser, logout } = useUser();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   console.log('anchorEl:', anchorEl);
 
@@ -117,7 +118,7 @@ export default function PrimarySearchAppBar() {
     if (!token) return;
     (async () => {
       try {
-        const meRes = await fetch('/api/user/me', { headers: { Authorization: 'Bearer ' + token } });
+        const meRes = await fetch(`${API_URL}/api/user/me`, { headers: { Authorization: 'Bearer ' + token } });
         if (!meRes.ok) return;
         const me = await meRes.json();
         const normalizedUserName = me.userName ?? me.username ?? null;

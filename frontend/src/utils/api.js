@@ -1,10 +1,12 @@
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 function getAuthHeader() {
   const token = (() => { try { return localStorage.getItem('jwtToken'); } catch { return null; } })();
   return token ? { Authorization: 'Bearer ' + token } : {};
 }
 
 export const fetchComments = async (questionId) => {
-  const res = await fetch(`/api/answer/${questionId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/${questionId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to fetch comments: ${res.status}`);
   const data = await res.json();
   console.log('Raw fetched comments data:', data);
@@ -30,7 +32,7 @@ export const fetchTopLevelComments = async (questionId) => {
 
 // Create top-level answer
 export async function postAnswer(questionId, content, userId) {
-  const res = await fetch(`/api/answer/`, {
+  const res = await fetch(`${API_URL}/api/answer/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ content, questionId: Number(questionId), userId }),
@@ -44,7 +46,7 @@ export async function postAnswer(questionId, content, userId) {
 
 // Reply (NewReplyDTO shape per your backend: content, userId, parentId)
 export async function postCommentReply(parentAnswerId, userId, content) {
-  const res = await fetch(`/api/answer/a/${parentAnswerId}`, {
+  const res = await fetch(`${API_URL}/api/answer/a/${parentAnswerId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ content, userId, parentId: parentAnswerId }),
@@ -58,7 +60,7 @@ export async function postCommentReply(parentAnswerId, userId, content) {
 
 // Likes/dislikes, questions, etc. (unchanged)
 export const fetchQuestion = async (id) => {
-  const res = await fetch(`/api/question/${id}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/question/${id}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to fetch question: ${res.status}`);
   const data = await res.json();
   const author = data && data.author !== undefined ? data.author : {};
@@ -69,7 +71,7 @@ export const fetchQuestion = async (id) => {
 };
 
 export async function addPoints(userId, points = 10) {
-  const res = await fetch('/api/user/', {
+  const res = await fetch(`${API_URL}/api/user/`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
     body: JSON.stringify({ userId, points }),
@@ -81,7 +83,7 @@ export async function addPoints(userId, points = 10) {
 
 export const fetchAllQuestions = async () => {
   try {
-    const response = await fetch('/api/question/all', {
+    const response = await fetch(`${API_URL}/api/question/all`, {
       headers: {
         ...getAuthHeader(),
       },
@@ -118,7 +120,7 @@ export const fetchAllQuestions = async () => {
 
 export const createQuestion = async (title, content, userId) => {
   try {
-    const response = await fetch('/api/question/', {
+    const response = await fetch(`${API_URL}/api/question/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -137,60 +139,60 @@ export const createQuestion = async (title, content, userId) => {
 };
 
 export async function likeQuestion(questionId) {
-  const res = await fetch(`/api/question/like/${questionId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/question/like/${questionId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to like question: ${res.status}`);
   const data = await res.json();
   return data;
 }
 export async function dislikeQuestion(questionId) {
-  const res = await fetch(`/api/question/dislike/${questionId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/question/dislike/${questionId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to dislike question: ${res.status}`);
   const data = await res.json();
   return data;
 }
 export async function fetchQuestionLikesCount(questionId) {
-  const res = await fetch(`/api/question/like/${questionId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/question/like/${questionId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to fetch question likes: ${res.status}`);
   return await res.json();
 }
 export async function fetchQuestionDislikesCount(questionId) {
-  const res = await fetch(`/api/question/dislike/${questionId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/question/dislike/${questionId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to fetch question dislikes: ${res.status}`);
   return await res.json();
 }
 
 export async function likeAnswer(answerId) {
-  const res = await fetch(`/api/answer/like/${answerId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/like/${answerId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to like answer: ${res.status}`);
   const data = await res.json();
   return data;
 }
 export async function dislikeAnswer(answerId) {
-  const res = await fetch(`/api/answer/dislike/${answerId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/dislike/${answerId}`, { method: 'PATCH', headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to dislike answer: ${res.status}`);
   const data = await res.json();
   return data;
 }
 export async function fetchAnswerLikesCount(answerId) {
-  const res = await fetch(`/api/answer/like/${answerId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/like/${answerId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to fetch answer likes: ${res.status}`);
   return await res.json();
 }
 export async function fetchAnswerDislikesCount(answerId) {
-  const res = await fetch(`/api/answer/dislike/${answerId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/dislike/${answerId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to fetch answer dislikes: ${res.status}`);
   return await res.json();
 }
 
 export async function alreadyLikedAnswer(answerId) {
-  const res = await fetch(`/api/answer/like/user/${answerId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/like/user/${answerId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to check if answer already liked: ${res.status}`);
   const data = await res.json();
   return data === true;
 }
 
 export async function alreadyDislikedAnswer(answerId) {
-  const res = await fetch(`/api/answer/dislike/user/${answerId}`, { headers: { ...getAuthHeader() } });
+  const res = await fetch(`${API_URL}/api/answer/dislike/user/${answerId}`, { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error(`Failed to check if answer already disliked: ${res.status}`);
   const data = await res.json();
   return data === true;
