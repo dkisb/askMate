@@ -52,8 +52,6 @@ public class AnswerService {
 
     public void addNewAnswer(NewAnswerDTO answerDTO) {
         Question question = questionRepository.findById(answerDTO.questionId()).orElseThrow(() -> new NoSuchElementException("Question not found with id: " + answerDTO.questionId()));
-        //User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        //UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         UserEntity currentUser = userRepository.findById(answerDTO.userId()).orElseThrow(() -> new NoSuchElementException("User not found with id: " + answerDTO.userId()));
         Answer answer = new Answer();
         answer.setContent(answerDTO.content());
@@ -114,10 +112,6 @@ public class AnswerService {
     }
 
     public void addCommentOfComment(int parentId, NewReplyDTO replyDTO) { // unnecessary parent_id: NewReplyDTO includes it
-        /*
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
-         */
         UserEntity currentUser = userRepository.findById(replyDTO.userId()).orElseThrow(() -> new NoSuchElementException("User not found"));
         Answer parentAnswer = answerRepository.findById(parentId).orElseThrow(() -> new NoSuchElementException("Answer not found with id: " + replyDTO.parentId()));
         Answer answer = new Answer();

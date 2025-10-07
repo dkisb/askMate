@@ -97,13 +97,13 @@ public class UserService {
 
     public LoginDTO getMe(){
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException(String.format("User '%s' not found", user.getUsername())));
         return new LoginDTO(currentUser.getUsername(), currentUser.getId());
     }
 
     public void deleteUser(int id) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException(String.format("User '%s' not found", user.getUsername())));
         if (currentUser.getId() != id) {
             throw new NotAllowedOperationException("You are not allowed to delete this user");
         }
@@ -111,31 +111,31 @@ public class UserService {
     }
 
     public void makeUserMod(int id) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found"));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found with userId: " + id));
         user.setRoles(EnumSet.of(Role.ROLE_USER, Role.ROLE_MODERATOR));
         userRepository.save(user);
     }
 
     public void makeModUser(int id) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found"));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found with userId: " + id));
         user.setRoles(EnumSet.of(Role.ROLE_USER));
         userRepository.save(user);
     }
 
     public void deleteAnyUser(int id) {
-        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found"));
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new NoSuchElementException("User not found with userId: " + id));
         userRepository.delete(user);
     }
 
     public EmailDTO getEmail() {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException(String.format("User '%s' not found", user.getUsername())));
         return new EmailDTO(currentUser.getEmail());
     }
 
     public void editUser(ModifierDTO dto) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
+        UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException(String.format("User '%s' not found", user.getUsername())));
         if(!passwordEncoder.matches(dto.password(), currentUser.getPassword())) {
             throw new NotAllowedOperationException("You are not allowed to edit this user's data");
         }

@@ -120,7 +120,6 @@ public class QuestionService {
         UserEntity currentUser = userRepository.findByUsername(user.getUsername()).orElseThrow(() -> new NoSuchElementException("User not found"));
         List<Question> myQuestions = questionRepository.findAllByAuthor(currentUser).orElseThrow(() -> new NoSuchElementException("Questions not found"));
         return myQuestions.stream().map(question -> new QuestionDTO(question.getId(), question.getTitle(), question.getContent(), question.getCreatedAt(), user.getUsername())).collect(Collectors.toList());
-
     }
 
     public boolean addLikeToQuestion(int id) {

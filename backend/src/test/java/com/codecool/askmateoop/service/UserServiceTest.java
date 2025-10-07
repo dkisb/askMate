@@ -6,9 +6,7 @@ import com.codecool.askmateoop.errorhandler.custom_exceptions.UsernameAlreadyExi
 import com.codecool.askmateoop.model.entities.Role;
 import com.codecool.askmateoop.model.entities.UserEntity;
 import com.codecool.askmateoop.model.payload.dto.JwtResponse;
-import com.codecool.askmateoop.model.payload.dto.user.LoginRequestDTO;
-import com.codecool.askmateoop.model.payload.dto.user.NewUserDTO;
-import com.codecool.askmateoop.model.payload.dto.user.PointsDTO;
+import com.codecool.askmateoop.model.payload.dto.user.*;
 import com.codecool.askmateoop.repository.UserRepository;
 import com.codecool.askmateoop.security.jwt.JwtUtils;
 import org.junit.jupiter.api.Test;
@@ -27,6 +25,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.*;
@@ -74,16 +73,132 @@ public class UserServiceTest {
     public void createUserWithUsernameAlreadyInUseThenThrowUserNameAlreadyInUseException() {
         NewUserDTO dto = new NewUserDTO("testuser", "test@test.com", "123456");
         when(userRepository.existsByUsername(dto.username())).thenReturn(true);
-
-        assertThrows(UsernameAlreadyExistsException.class, () -> userService.createUser(dto));
+        UsernameAlreadyExistsException exception = assertThrows(UsernameAlreadyExistsException.class, () -> userService.createUser(dto));
+        assertEquals("Username testuser already exists", exception.getMessage());
     }
 
     @Test
     public void createUserWithEmailAlreadyExistsThenThrowsEmailAlreadyExistsException() {
         NewUserDTO dto = new NewUserDTO("testuser", "test@test.com", "123456");
         when(userRepository.existsByEmail(dto.email())).thenReturn(true);
+        EmailAlreadyInUseException exception = assertThrows(EmailAlreadyInUseException.class, () -> userService.createUser(dto));
+        assertEquals("Email already in use: test@test.com", exception.getMessage());
+    }
 
-        assertThrows(EmailAlreadyInUseException.class, () -> userService.createUser(dto));
+    @Test
+    void getMeWithValidCredentialsThenReturnLoginDTO() {
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity currentUser = new UserEntity();
+        currentUser.setUsername("testUser");
+        currentUser.setId(6);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(currentUser));
+        assertEquals(new LoginDTO("testUser", 6), userService.getMe());
+    }
+
+    @Test
+    void getMeWithInvalidCredentialsThenReturnNoSuchElementException() {
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.empty());
+        assertThrows(NoSuchElementException.class, () -> userService.getMe());
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.getMe());
+        assertEquals("User 'testUser' not found", exception.getMessage());
+    }
+
+    @Test
+    void getEmailWithValidCredentialsThenReturnEmailDTO() {
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity currentUser = new UserEntity();
+        currentUser.setEmail("testuser@email.com");
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(currentUser));
+        assertEquals(new EmailDTO("testuser@email.com"), userService.getEmail());
+    }
+
+    @Test
+    void getEmailWithInvalidCredentialsThenReturnNoSuchElementException() {
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.empty());
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.getEmail());
+        assertEquals("User 'testUser' not found", exception.getMessage());
+
+    }
+
+    @Test
+    void editUserWithValidCredentialsThenSaveUser() {
+        ModifierDTO dto = new ModifierDTO("newUserName", "newEmail@email.com", "password", "newPassword");
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity currentUser = new UserEntity();
+        currentUser.setUsername("testUser");
+        currentUser.setEmail("oldEmail@email.com");
+        currentUser.setPassword("encodedPassword");
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(currentUser));
+        when(passwordEncoder.matches(dto.password(), currentUser.getPassword())).thenReturn(true);
+        when(passwordEncoder.encode(dto.newPassword())).thenReturn("encodedNewPassword");
+
+        userService.editUser(dto);
+
+        ArgumentCaptor<UserEntity> captor = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepository).save(captor.capture());
+        UserEntity savedUser = captor.getValue();
+        assertEquals("newUserName", savedUser.getUsername());
+        assertEquals("newEmail@email.com", savedUser.getEmail());
+        assertEquals("encodedNewPassword", savedUser.getPassword());
+    }
+
+    @Test
+    void editUserWithInvalidCredentialsThenThrowNoSuchElementException() {
+        ModifierDTO dto = new ModifierDTO("newUserName", "newEmail@email.com", "password", "newPassword");
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.empty());
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.editUser(dto));
+        assertEquals("User 'testUser' not found", exception.getMessage());
+    }
+
+    @Test
+    void editUserWithInvalidPasswordThenThrowsNotAllowedOperationException() {
+        ModifierDTO dto = new ModifierDTO("newUserName", "newEmail@email.com", "password", "newPassword");
+        User springUser = new User("testUser", "password", new HashSet<>());
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(springUser);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        UserEntity currentUser = new UserEntity();
+        currentUser.setUsername("testUser");
+        currentUser.setPassword("encodedPassword");
+        when(userRepository.findByUsername(springUser.getUsername())).thenReturn(Optional.of(currentUser));
+        when(passwordEncoder.matches(dto.password(), currentUser.getPassword())).thenReturn(false);
+        NotAllowedOperationException exception = assertThrows(NotAllowedOperationException.class, () -> userService.editUser(dto));
+        assertEquals("You are not allowed to edit this user's data", exception.getMessage());
     }
 
 
@@ -137,8 +252,8 @@ public class UserServiceTest {
         user.setUsername("testuser");
         user.setId(1);
         when(userRepository.findByUsername(user.getUsername())).thenReturn(Optional.empty());
-
-        assertThrows(NoSuchElementException.class, () -> userService.getUserId("testuser"));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.getUserId("testuser"));
+        assertEquals("User not found with username: testuser", exception.getMessage());
     }
 
     @Test
@@ -159,6 +274,8 @@ public class UserServiceTest {
         userEntity.setId(1);
         when(userRepository.findById(userEntity.getId())).thenReturn(Optional.empty());
         assertThrows(NoSuchElementException.class, () -> userService.getReliabilityLevel(userEntity.getId()));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.getReliabilityLevel(userEntity.getId()));
+        assertEquals("User not found with userId: 1", exception.getMessage());
     }
 
     @Test
@@ -178,8 +295,9 @@ public class UserServiceTest {
         PointsDTO dto = new PointsDTO(1, 5);
         when(userRepository.findById(dto.userId())).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> userService.addNewPoints(dto));
         verify(userRepository, never()).save(any(UserEntity.class));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.addNewPoints(dto));
+        assertEquals("User not found with userId: 1", exception.getMessage());
     }
 
     @Test
@@ -213,8 +331,9 @@ public class UserServiceTest {
         userEntity.setUsername("testUser");
         when(userRepository.findByUsername("testUser")).thenReturn(Optional.of(userEntity));
 
-        assertThrows(NotAllowedOperationException.class, () -> userService.deleteUser(2));
         verify(userRepository, never()).delete(any());
+        NotAllowedOperationException exception = assertThrows(NotAllowedOperationException.class, () -> userService.deleteUser(2));
+        assertEquals("You are not allowed to delete this user", exception.getMessage());
     }
 
     @Test
@@ -229,6 +348,9 @@ public class UserServiceTest {
 
         assertThrows(NoSuchElementException.class, () -> userService.deleteUser(1));
         verify(userRepository, never()).delete(any());
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.deleteUser(1));
+        assertEquals("User 'ghostUser' not found", exception.getMessage());
+
     }
 
     @Test
@@ -250,8 +372,9 @@ public class UserServiceTest {
         user.setRoles(EnumSet.of(Role.ROLE_USER));
         user.setId(1);
         when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> userService.makeUserMod(user.getId()));
         verify(userRepository, never()).save(any(UserEntity.class));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.makeUserMod(user.getId()));
+        assertEquals("User not found with userId: 1", exception.getMessage());
     }
 
     @Test
@@ -274,8 +397,9 @@ public class UserServiceTest {
         user.setId(1);
         when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> userService.makeModUser(user.getId()));
         verify(userRepository, never()).save(any(UserEntity.class));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.makeModUser(user.getId()));
+        assertEquals("User not found with userId: 1", exception.getMessage());
     }
 
     @Test
@@ -295,7 +419,8 @@ public class UserServiceTest {
         user.setId(1);
         when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
 
-        assertThrows(NoSuchElementException.class, () -> userService.deleteAnyUser(user.getId()));
         verify(userRepository, never()).delete(any(UserEntity.class));
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class, () -> userService.deleteAnyUser(user.getId()));
+        assertEquals("User not found with userId: 1", exception.getMessage());
     }
 }
