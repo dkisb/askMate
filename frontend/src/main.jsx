@@ -9,6 +9,7 @@ import ProfilePage from './components/ProfilePage.jsx';
 import ErrorPage from './ErrorPage.jsx';
 import Layout from './Layout.jsx';
 import { UserProvider } from './context/UserContext.jsx';
+import MyQuestions from './MyQuestions.jsx';
 
 const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
       {
         path: '/question/:id',
         element: <QuestionPage />,
+      },
+      {
+        path: '/myquestions',
+        element: <MyQuestions />,
       },
     ],
   },

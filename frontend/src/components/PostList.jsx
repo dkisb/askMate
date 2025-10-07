@@ -11,10 +11,11 @@ export default function PostList({
   loading,
   questions,
   likesByQuestionId,
+  dislikesByQuestionId,
   commentsCountByQuestionId,
-  userReactions,
-  pending,
-  onToggleReaction,
+  onLikeClick,
+  onDislikeClick,
+  userReviews,
   onShareQuestion,
   currentUserName,
   currentUserId,
@@ -33,6 +34,7 @@ export default function PostList({
       {questions.map((question) => {
         const commentsCount = commentsCountByQuestionId[question.id] ?? 0;
         const likeCount = likesByQuestionId[question.id] ?? 0;
+        const dislikeCount = dislikesByQuestionId[question.id] ?? 0;
         return (
           <Box key={question.id} sx={{ mb: 2 }}>
             <Card variant="outlined">
@@ -62,7 +64,7 @@ export default function PostList({
                     <Box
                       component={Link}
                       to={`/question/${question.id}`}
-                      state={{ userName: currentUserName, userId: currentUserId, questionUserId: question.userId }}
+                      state={{ userName: currentUserName, userId: currentUserId, questionUserId: question.userId}}
                       sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'inherit', textDecoration: 'none' }}
                     >
                       <Typography variant="caption">{commentsCount}</Typography>
@@ -73,21 +75,20 @@ export default function PostList({
                 <Box sx={{ width: 72, borderLeft: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5, p: 1 }}>
                   <IconButton
                     aria-label="Like question"
-                    onClick={() => onToggleReaction(question.id, 'like')}
-                    disabled={!!pending[question.id]}
-                    sx={{ color: userReactions[question.id] === 'like' ? 'primary.main' : 'inherit' }}
+                    onClick={() => onLikeClick(question.id)}
+                    sx={{ color: userReviews[question.id].like === true ? 'primary.main' : 'inherit' }}
                   >
                     <ArrowBigUp size={28} />
                   </IconButton>
                   <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{likeCount}</Typography>
                   <IconButton
                     aria-label="Dislike question"
-                    onClick={() => onToggleReaction(question.id, 'dislike')}
-                    disabled={!!pending[question.id]}
-                    sx={{ color: userReactions[question.id] === 'dislike' ? 'error.main' : 'inherit' }}
+                    onClick={() => onDislikeClick(question.id)}
+                    sx={{ color: userReviews[question.id].dislike === true ? 'error.main' : 'inherit' }}
                   >
                     <ArrowBigDown size={28} />
                   </IconButton>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{dislikeCount}</Typography>
                 </Box>
               </Box>
             </Card>

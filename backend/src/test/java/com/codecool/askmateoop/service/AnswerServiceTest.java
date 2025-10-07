@@ -266,30 +266,6 @@ class AnswerServiceTest {
     }
 
     @Test
-    void dislikeAnswerWithValidAnswerIdThenSaveAnswer() {
-        int answerId = 10;
-        Answer answer = new Answer();
-        answer.setId(answerId);
-        answer.setDislikes(4);
-        when(answerRepository.findById(answerId)).thenReturn(Optional.of(answer));
-        when(answerRepository.save(Mockito.any(Answer.class))).thenReturn(answer);
-
-        answerService.dislikeAnswer(answerId);
-
-        ArgumentCaptor<Answer> answerCaptor = ArgumentCaptor.forClass(Answer.class);
-        verify(answerRepository).save(answerCaptor.capture());
-        Answer capturedAnswer = answerCaptor.getValue();
-        assertEquals(5, capturedAnswer.getDislikes());
-    }
-
-    @Test
-    void dislikeAnswerWithInvalidAnswerIdThenThrowNoSuchElementException() {
-        int answerId = 10;
-        when(answerRepository.findById(answerId)).thenReturn(Optional.empty());
-        assertThrows(NoSuchElementException.class, () -> answerService.dislikeAnswer(answerId));
-    }
-
-    @Test
     void getDislikesWithValidAnswerIdThenGetDislikes() {
         int answerId = 10;
         Answer answer = new Answer();

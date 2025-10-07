@@ -6,6 +6,7 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
+import React from 'react';
 
 const mockTopics = [
   { id: 1, name: 'JavaScript', upvotes: 1240, posts: 87 },
@@ -48,7 +49,7 @@ export default function TopicsList({ topPostTitle }) {
                 />
               </ListItem>
               {idx < mockTopics.length - 1 && <Divider component="li" />}
-            </>
+            </React.Fragment>
           ))}
         </List>
       </CardContent>

@@ -45,13 +45,13 @@ public class AnswerController {
     }
 
     @PostMapping("/like/{id}")
-    public void addLikeToAnswer(@PathVariable int id) {
-        answerService.addLikeToAnswer(id);
+    public boolean addLikeToAnswer(@PathVariable int id) {
+        return answerService.addLikeToAnswer(id);
     }
 
     @PostMapping("/dislike/{id}")
-    public void addDislikeToAnswer(@PathVariable int id) {
-        answerService.addDislikeToAnswer(id);
+    public boolean addDislikeToAnswer(@PathVariable int id) {
+        return answerService.addDislikeToAnswer(id);
     }
 
     @GetMapping("/like/{id}")
@@ -65,13 +65,23 @@ public class AnswerController {
     }
 
     @PatchMapping("/like/{id}")
-    public void likeAnswer(@PathVariable int id) {
-        answerService.likeAnswer(id);
+    public boolean likeAnswer(@PathVariable int id) {
+        return answerService.addLikeToAnswer(id);
     }
 
     @PatchMapping("/dislike/{id}")
-    public void dislikeAnswer(@PathVariable int id) {
-        answerService.dislikeAnswer(id);
+    public boolean dislikeAnswer(@PathVariable int id) {
+        return answerService.addDislikeToAnswer(id);
+    }
+
+    @GetMapping("/like/user/{answerId}")
+    public boolean alreadyLiked(@PathVariable int answerId) {
+        return answerService.alreadyLiked(answerId);
+    }
+
+    @GetMapping("/dislike/user/{answerId}")
+    public boolean alreadyDisliked(@PathVariable int answerId) {
+        return answerService.alreadyDisliked(answerId);
     }
 
     @DeleteMapping("/{id}")
