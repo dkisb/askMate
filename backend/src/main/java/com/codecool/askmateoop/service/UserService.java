@@ -1,12 +1,12 @@
 package com.codecool.askmateoop.service;
 
-import com.codecool.askmateoop.errorhandler.custom_exceptions.NotAllowedOperationException;
 import com.codecool.askmateoop.errorhandler.custom_exceptions.EmailAlreadyInUseException;
+import com.codecool.askmateoop.errorhandler.custom_exceptions.NotAllowedOperationException;
 import com.codecool.askmateoop.errorhandler.custom_exceptions.UsernameAlreadyExistsException;
-import com.codecool.askmateoop.model.payload.dto.JwtResponse;
-import com.codecool.askmateoop.model.payload.dto.user.*;
 import com.codecool.askmateoop.model.entities.Role;
 import com.codecool.askmateoop.model.entities.UserEntity;
+import com.codecool.askmateoop.model.payload.dto.JwtResponse;
+import com.codecool.askmateoop.model.payload.dto.user.*;
 import com.codecool.askmateoop.repository.UserRepository;
 import com.codecool.askmateoop.security.jwt.JwtUtils;
 import jakarta.transaction.Transactional;
@@ -20,12 +20,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.EnumSet;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
