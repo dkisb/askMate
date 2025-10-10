@@ -16,7 +16,7 @@
   A modern Reddit-like Q&A platform built with Spring Boot and React.<br>
   Ask questions, get answers, and engage with the community!
   <br />
-  <a href="https://github.com/dkis/askMate"><strong>Explore the docs »</strong></a>
+  <a href="https://github.com/dkisb/askMate"><strong>Explore the docs »</strong></a>
   <br />
   <br />
   <a href="https://ask-mate-five.vercel.app/">Try the app</a>
