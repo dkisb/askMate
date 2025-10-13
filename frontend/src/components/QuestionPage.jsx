@@ -254,8 +254,8 @@ export default function QuestionPage() {
     try {
       const refreshed = await fetchQuestionLikesCount(questionId);
       setQuestionLikeCounts(Number(refreshed) || 0 );
-    } catch {
-      // ignore
+    } catch(err) {
+      console.err("Failed to fetch likescount of question", err)
     }
   }
 
@@ -266,8 +266,8 @@ export default function QuestionPage() {
     try {
       const refreshed = await fetchQuestionDislikesCount(questionId);
       setQuestionDislikeCounts(Number(refreshed) || 0);
-    } catch {
-      // ignore
+    } catch(err) {
+      console.err("Failed to fetch dislikecount of question", err)
     }
   }
 
@@ -279,8 +279,8 @@ export default function QuestionPage() {
       const refreshed = await fetchAnswerLikesCount(answerId);
       console.log('refreshed like count for', answerId, 'is', refreshed);
       setAnswerLikeCounts((prev) => ({ ...prev, comments: { ...prev.comments, [answerId]: Number(refreshed) || 0 } }));
-    } catch {
-      // ignore
+    } catch(err) {
+      console.err("Failed to fetch likecounts of answer", err)
     }
   }
 
@@ -291,8 +291,8 @@ export default function QuestionPage() {
     try {
       const refreshed = await fetchAnswerDislikesCount(answerId);
       setAnswerDislikeCounts((prev) => ({ ...prev, comments: { ...prev.comments, [answerId]: Number(refreshed) || 0 } }));
-    } catch {
-      // ignore
+    } catch(err) {
+      console.err("Failed to fetch dislikecount of answer", err)
     }
   }
 
