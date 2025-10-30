@@ -99,16 +99,7 @@ export default function HomePage() {
   useEffect(() => {
     fetchData();
   }, []);
-/*
-  useEffect(() => {
-    try {
-      localStorage.setItem('askmate_home_q_react', JSON.stringify(userReactions));
-    } catch {
-      // ignore
-    }
-  }, [userReactions]);
 
-  */
   // Auto-resize the question content textarea based on input length
   useEffect(() => {
     if (contentRef.current) {
@@ -130,8 +121,8 @@ export default function HomePage() {
         const me = await meRes.json();
         setCurrentUserName(me.userName ?? me.username ?? null);
         setCurrentUserId(me.userId ?? me.userid ?? me.id ?? null);
-      } catch {
-        // ignore
+      } catch(err) {
+        console.err("Something went wrong while fetching data", err)
       }
     })();
   }, [currentUserId, API_URL]);
@@ -178,8 +169,8 @@ export default function HomePage() {
     try {
       const refreshed = await fetchQuestionLikesCount(questionId);
       setLikesByQuestionId((prev) => ({ ...prev, [questionId]: Number(refreshed) || 0 }));
-    } catch {
-      // ignore
+    } catch(err) {
+      console.err("Failed to fetching likecount of question", err)
     }
   }
 
@@ -189,8 +180,8 @@ export default function HomePage() {
     try {
       const refreshed = await fetchQuestionDislikesCount(questionId);
       setDislikesByQuestionId((prev) => ({ ...prev, [questionId]: Number(refreshed) || 0 }));
-    } catch {
-      // ignore
+    } catch(err) {
+      console.err("Failed to fetch dislikecount of question", err)
     }
   }
 

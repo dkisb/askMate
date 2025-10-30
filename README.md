@@ -32,6 +32,7 @@
 
 askMate is a full-stack Q&A platform inspired by Reddit and Stack Overflow. Users can register, ask questions, post answers, and engage with the community through likes, dislikes, and comments. It features JWT authentication, role-based access control, and a modern responsive UI.
 
+![Question page screenshot](./screenshots/askmate.png)
 ---
 
 <details>
