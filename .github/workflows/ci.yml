@@ -91,25 +91,27 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/askmate
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
-          JWT_SECRET: dGhpcy1pcy1hLTMyLWJ5dGUtc2VjcmV0LWtleSEhIQ==
+          JWT_SECRET: dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLXRlc3Rpbmc=
           JWT_EXPIRATION_MS: "86400000"
         run: |
           cd ../backend
-          mvn spring-boot:run &
+          nohup mvn -DskipTests spring-boot:run > backend.log 2>&1 &
+          echo $! > backend.pid
           cd ../frontend
 
       - name: Wait for backend
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ 2>/dev/null || echo "000")
             if [ "$code" != "000" ]; then
               echo "Backend is up (HTTP $code)"
               exit 0
             fi
-            echo "Waiting for backend... ($i/30)"
+            echo "Waiting for backend... ($i/60)"
             sleep 2
           done
-          echo "Backend did not become ready"
+          echo "Backend did not become ready. Last 50 lines of log:"
+          tail -50 ../backend/backend.log || true
           exit 1
 
       - name: Run Playwright E2E tests
