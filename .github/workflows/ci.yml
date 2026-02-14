@@ -91,7 +91,7 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/askmate
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
-          JWT_SECRET: ci-test-secret-key
+          JWT_SECRET: dGhpcy1pcy1hLTMyLWJ5dGUtc2VjcmV0LWtleSEhIQ==
           JWT_EXPIRATION_MS: "86400000"
         run: |
           cd ../backend

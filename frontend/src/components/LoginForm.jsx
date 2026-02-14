@@ -58,6 +58,7 @@ export default function LoginForm() {
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
+          name="username"
           onChange={(e) => setUserName(e.target.value)}
           type="text"
           placeholder="Username"
@@ -65,6 +66,7 @@ export default function LoginForm() {
           required
         />
         <input
+          name="password"
           onChange={(e) => setPassword(e.target.value)}
           type="password"
           placeholder="Password"

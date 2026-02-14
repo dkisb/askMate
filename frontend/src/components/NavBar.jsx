@@ -177,6 +177,7 @@ export default function PrimarySearchAppBar() {
               Welcome back{user?.userName ? `, ${user.userName}` : ''}
             </Typography>
             <IconButton
+              data-testid="user-menu"
               size="large"
               edge="end"
               aria-label="account of current user"

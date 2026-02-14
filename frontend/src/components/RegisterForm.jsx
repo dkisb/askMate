@@ -72,6 +72,7 @@ export default function RegisterForm({ onRegistered }) {
     <>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
+          name="username"
           onChange={(e) => setUserName(e.target.value)}
           type="text"
           placeholder="Username"
@@ -79,6 +80,7 @@ export default function RegisterForm({ onRegistered }) {
           required
         />
         <input
+          name="password"
           onChange={(e) => setPassword(e.target.value)}
           type="password"
           placeholder="Password"
@@ -87,6 +89,7 @@ export default function RegisterForm({ onRegistered }) {
           required
         />
         <input
+          name="email"
           onChange={(e) => setEmail(e.target.value)}
           type="email"
           placeholder="Email"

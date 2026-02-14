@@ -128,14 +128,9 @@ These instructions will get you a copy of askMate up and running locally for dev
 
 4. **Configure database**
 
-   - Create a PostgreSQL database named `askmate`
-   - Update `backend/src/main/resources/application.properties` with your database credentials:
-   ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/askmate
-   spring.datasource.username=your_username
-   spring.datasource.password=your_password
-   spring.jpa.hibernate.ddl-auto=update
-   ```
+   - Create a PostgreSQL database named `askmate` (or use Docker: `docker compose up -d database`)
+   - Defaults in `application.properties` assume `localhost:5432` with `postgres/postgres`. Override via env vars:
+     `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `JWT_SECRET`
 
 5. **Run the backend server**
    ```sh
