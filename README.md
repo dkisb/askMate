@@ -156,6 +156,18 @@ docker compose up --build
 
 This will start the backend, frontend, and PostgreSQL database automatically.
 
+### GitHub Actions CI
+
+The E2E workflow requires these **repository secrets** (Settings → Secrets and variables → Actions):
+
+| Secret         | Description                             |
+|----------------|-----------------------------------------|
+| `DB_USER`      | PostgreSQL username                     |
+| `DB_PASSWORD`  | PostgreSQL password                     |
+| `JWT_SECRET`   | Base64-encoded 32-byte key for JWT (e.g. `echo -n "this-is-a-secret-key-for-testing" \| base64`) |
+
+Optional **variables**: `DB_NAME` (default: `askmate`), `JWT_EXPIRATION_MS` (default: `86400000`).
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- USAGE EXAMPLES -->

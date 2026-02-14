@@ -50,9 +50,9 @@ jobs:
       postgres:
         image: postgres:18
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: askmate
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ vars.DB_NAME || 'askmate' }}
         ports:
           - 5432:5432
         options: >-
@@ -88,11 +88,11 @@ jobs:
 
       - name: Start backend
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/askmate
-          SPRING_DATASOURCE_USERNAME: postgres
-          SPRING_DATASOURCE_PASSWORD: postgres
-          JWT_SECRET: dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLXRlc3Rpbmc=
-          JWT_EXPIRATION_MS: "86400000"
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ vars.DB_NAME || 'askmate' }}
+          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USER }}
+          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_MS: ${{ vars.JWT_EXPIRATION_MS || '86400000' }}
         run: |
           cd ../backend
           nohup mvn -DskipTests spring-boot:run > backend.log 2>&1 &
