@@ -86,6 +86,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Build backend JAR
+        working-directory: backend
+        run: mvn package -DskipTests -B -q
+
       - name: Start backend
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ vars.DB_NAME || 'askmate' }}
@@ -93,25 +97,23 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD || 'postgres' }}
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLXRlc3Rpbmc=' }}
           JWT_EXPIRATION_MS: ${{ vars.JWT_EXPIRATION_MS || '86400000' }}
+        working-directory: backend
         run: |
-          cd ../backend
-          nohup mvn -DskipTests spring-boot:run > backend.log 2>&1 &
+          java -jar target/*.jar > backend.log 2>&1 &
           echo $! > backend.pid
-          cd ../frontend
 
       - name: Wait for backend
         run: |
           for i in $(seq 1 60); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ 2>/dev/null || echo "000")
-            if [ "$code" != "000" ]; then
-              echo "Backend is up (HTTP $code)"
+            if curl -s -o /dev/null -w '' http://localhost:8080/ 2>/dev/null; then
+              echo "Backend is up!"
               exit 0
             fi
             echo "Waiting for backend... ($i/60)"
             sleep 2
           done
-          echo "Backend did not become ready. Last 50 lines of log:"
-          tail -50 ../backend/backend.log || true
+          echo "Backend did not start. Log output:"
+          cat ../backend/backend.log || true
           exit 1
 
       - name: Run Playwright E2E tests
