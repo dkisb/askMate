@@ -15,6 +15,7 @@ export default function ProfilePage() {
   useEffect(() => {
     setUserName(user?.userName || '');
     fetchEmail();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchEmail uses API_URL, run when user changes
   }, [user]);
 
   async function fetchEmail() {

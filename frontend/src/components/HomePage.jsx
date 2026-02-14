@@ -98,6 +98,7 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch on mount only
   }, []);
 
   // Auto-resize the question content textarea based on input length

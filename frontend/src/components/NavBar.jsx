@@ -129,7 +129,7 @@ export default function PrimarySearchAppBar() {
         // ignore hydration errors
       }
     })();
-  }, [user, setUser]);
+  }, [user, setUser, API_URL]);
 
   return (
     <Box sx={{ flexGrow: 1 }}>

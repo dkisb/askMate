@@ -30,7 +30,7 @@ export default function QuestionPage() {
   const { id } = useParams();
   const [postReaction, setPostReaction] = useState(null);
   const [commentReactions, setCommentReactions] = useState({});
-  const [pending, setPending] = useState({ post: false, comments: {} });
+  const [pending, _setPending] = useState({ post: false, comments: {} });
   const [questionLikeCounts, setQuestionLikeCounts] = useState(0);
   const [questionDislikeCounts, setQuestionDislikeCounts] = useState(0);
   const [answerLikeCounts, setAnswerLikeCounts] = useState({'comments': {}});
