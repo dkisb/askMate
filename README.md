@@ -158,15 +158,15 @@ This will start the backend, frontend, and PostgreSQL database automatically.
 
 ### GitHub Actions CI
 
-The E2E workflow uses these **repository secrets/variables** when set (Settings → Secrets and variables → Actions). If not set, CI falls back to `postgres`/`postgres` and a default JWT secret.
+The E2E workflow requires these **repository secrets** (Settings → Secrets and variables → Actions):
 
-| Name               | Type    | Description                                         |
-|--------------------|---------|-----------------------------------------------------|
-| `DB_USER`          | secret  | PostgreSQL username                                 |
-| `DB_PASSWORD`      | secret  | PostgreSQL password                                 |
-| `JWT_SECRET`       | secret  | Base64-encoded 32-byte key (e.g. `echo -n "this-is-a-secret-key-for-testing" \| base64`) |
-| `DB_NAME`          | variable| Database name (default: `askmate`)                  |
-| `JWT_EXPIRATION_MS`| variable| JWT expiry in ms (default: `86400000`)              |
+| Secret         | Description                             |
+|----------------|-----------------------------------------|
+| `DB_USER`      | PostgreSQL username                     |
+| `DB_PASSWORD`  | PostgreSQL password                     |
+| `JWT_SECRET`   | Base64-encoded 32-byte key for JWT (e.g. `echo -n "this-is-a-secret-key-for-testing" \| base64`) |
+
+Optional **variables**: `DB_NAME` (default: `askmate`), `JWT_EXPIRATION_MS` (default: `86400000`).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
