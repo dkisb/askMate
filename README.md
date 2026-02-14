@@ -100,10 +100,9 @@ These instructions will get you a copy of askMate up and running locally for dev
 
 ### Prerequisites
 
-- [Java 17+](https://adoptopenjdk.net/)
+- [Java 21](https://adoptium.net/) (LTS)
 - [Maven](https://maven.apache.org/)
-- [Node.js](https://nodejs.org/) (v18+ recommended)
-- [npm](https://www.npmjs.com/)
+- [Bun](https://bun.sh/) (or Node.js v18+)
 - [PostgreSQL](https://www.postgresql.org/)
 - [Docker](https://www.docker.com/) (optional)
 
@@ -118,7 +117,7 @@ These instructions will get you a copy of askMate up and running locally for dev
 2. **Install frontend dependencies**
    ```sh
    cd frontend
-   npm install
+   bun install
    ```
 
 3. **Set up backend**
@@ -147,7 +146,7 @@ These instructions will get you a copy of askMate up and running locally for dev
 6. **Run the frontend development server (in another terminal)**
    ```sh
    cd frontend
-   npm run dev
+   bun run dev
    ```
 
 7. **Open [http://localhost:5173](http://localhost:5173) to view the application**
