@@ -275,9 +275,10 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-Your Name - [@yourhandle](https://github.com/yourhandle)
+Döme Kisbalázs - [@dkisb](https://github.com/dkisb)
+Zoltán Bencsics - [@bencsicszoli](https://github.com/bencsicszoli)
 
-Project Link: [https://github.com/your-org/askMate](https://github.com/your-org/askMate)
+Project Link: [https://github.com/dkisb/askMate](https://github.com/dkisb/askMate)
 
 ---
 
