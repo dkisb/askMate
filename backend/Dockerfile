@@ -16,12 +16,11 @@ RUN mvn -B -q -e -Dmaven.test.skip=true package
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# A jar nevét igazítsd a tiédhez (target/askmateoop-0.0.1-SNAPSHOT.jar)
+# Jar file name
 COPY --from=builder /app/target/*.jar app.jar
 
-# Ajánlott: nem root user (opcionális)
+# Recommended: non-root user (optional)
 # RUN addgroup -S spring && adduser -S spring -G spring
 # USER spring:spring
-
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]
